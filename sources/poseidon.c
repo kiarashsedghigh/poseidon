@@ -152,6 +152,28 @@ void round_3(felt_t state[], int rc_idx, uint8_t round_mode)
     mix_layer_3(state);
 }
 
+/* Unoptimized round: round_idx selects a complete vector of three constants. */
+void round_3_standard(felt_t state[], int round_idx, uint8_t round_mode)
+{
+    // AddRoundConstants
+    for (int i = 0; i < 3; i++) {
+        f251_add(state[i], state[i], ROUND_CONST_MONT_P3[round_idx][i]);
+    }
+
+    // SubWords
+    if (round_mode == FULL_ROUND) {
+        for (int i = 0; i < 3; i++) {
+            f251_montgomery_cube(state[i], state[i]);
+        }
+    } else {
+        // Keep StarkWare's last-element S-box convention.
+        f251_montgomery_cube(state[2], state[2]);
+    }
+
+    // MixLayer
+    mix_layer_3(state);
+}
+
 void round_4(felt_t state[], int rc_idx, uint8_t round_mode)
 {
     // AddRoundConstant + SubWords
@@ -253,6 +275,25 @@ void permutation_3(felt_t state[])
     }
 
     state_from_montgomery(state,3);
+}
+
+void permutation_3_standard(felt_t state[])
+{
+    int r, round_idx = 0;
+
+    state_to_montgomery(state, 3);
+
+    for (r = 0; r < N_FULL_ROUNDS_P3 / 2; r++) {
+        round_3_standard(state, round_idx++, FULL_ROUND);
+    }
+    for (r = 0; r < N_PARTIAL_ROUNDS_P3; r++) {
+        round_3_standard(state, round_idx++, PARTIAL_ROUND);
+    }
+    for (r = 0; r < N_FULL_ROUNDS_P3 / 2; r++) {
+        round_3_standard(state, round_idx++, FULL_ROUND);
+    }
+
+    state_from_montgomery(state, 3);
 }
 
 void permutation_4(felt_t state[])

@@ -87,6 +87,18 @@ void mix_layer_9(felt_t state[]);
 void round_3(felt_t state[], int index, uint8_t round_mode);
 
 /**
+ * @brief Unoptimized three-element round: AddRoundConstants, SubWords, MixLayer.
+ * Adds three original constants in both full and partial rounds. The S-box is
+ * x^3, applied to all elements in full rounds and state[2] in partial rounds.
+ * This preserves the StarkWare parameters, including its S-box position.
+ *
+ * @param state three field elements in Montgomery form, modified in place
+ * @param round_idx round number in [0, 90], not an optimized constant offset
+ * @param round_mode 0xF for a full round, 0x1 for a partial round
+ */
+void round_3_standard(felt_t state[], int round_idx, uint8_t round_mode);
+
+/**
  * @brief Poseidon round function (n=4)
  * 
  * Apply one Poseidon round function to the input state (of size 4).
@@ -150,6 +162,15 @@ void round_9(felt_t state[], int index, uint8_t round_mode);
  * @param state input Poseidon state (modified by the function)
  */
 void permutation_3(felt_t state[]);
+
+/**
+ * @brief Unoptimized equivalent of permutation_3, with the same final outputs.
+ * Applies 4 full, 83 partial, and 4 full rounds using round_3_standard.
+ * Input and output are ordinary field elements; Montgomery conversion is
+ * performed internally. Intermediate partial-round states can differ from
+ * those of the optimized permutation_3.
+ */
+void permutation_3_standard(felt_t state[]);
 
 /**
  * @brief Poseidon permutation (n=4)
