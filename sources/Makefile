@@ -83,3 +83,21 @@ endif
 
 clean:
 	rm -f *.o *.so test test_asm test.exe test_asm.exe bin_test_adx*
+
+# Separate SD libraries; original implementation and library APIs stay intact.
+all: lib_pos_sd.so
+only_c: lib_pos_sd.so
+
+poseidon_sd.o: poseidon_sd.c poseidon_sd.h poseidon_rc.h f251.h
+
+lib_pos_sd.so: f251.o f251_int128.o poseidon_rc.o poseidon_sd.o
+	$(CC) $(CFLAGS) -shared -o $@ $^
+
+ifneq ($(PLATFORM_X86_64),)
+all: lib_pos_sd_asm.so
+poseidon_sd_asm.o: poseidon_sd.c poseidon_sd.h poseidon_rc.h f251.h
+	$(CC) $(CFLAGS) $(CFLAGS_ASM) -c -o $@ $<
+
+lib_pos_sd_asm.so: f251_c.o f251_asm.o poseidon_rc.o poseidon_sd_asm.o
+	$(CC) $(CFLAGS) $(CFLAGS_ASM) -shared -o $@ $^ platform_utils.c
+endif
