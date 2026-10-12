@@ -555,4 +555,17 @@ void f251_montgomery_cube(felt_t z, const felt_t x)
     f251_montgomery_mult(z,x2,x);
 }
 
+// Montgomery fifth power: x^2, x^4, then x^5. Supports z == x.
+void f251_montgomery_pow5(felt_t z, const felt_t x)
+{
+    felt_t reduced_x, x2, x4;
+
+    // Normalize before squaring: multiplication has an overflow edge case
+    // when both operands are near 2^256. Reduction preserves Montgomery form.
+    f251_final_reduce(reduced_x, x);
+    f251_montgomery_mult(x2, reduced_x, reduced_x);
+    f251_montgomery_mult(x4, x2, x2);
+    f251_montgomery_mult(z, x4, reduced_x);
+}
+
 #endif // defined(__SIZEOF_INT128__) && !defined(ASSEMBLY) && !defined(ISO_C)

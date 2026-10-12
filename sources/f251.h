@@ -296,4 +296,20 @@ SYSV_ABI void f251_montgomery_mult(felt_t z, const felt_t x, const felt_t y);
  */
 void f251_montgomery_cube(felt_t z, const felt_t x);
 
+/**
+ * @brief Montgomery fifth power
+ *
+ * Compute z = x^5 * (2^-256)^4 (mod p). If x represents a field
+ * element in Montgomery form, z represents its fifth power in that form.
+ * Input and output are in [0,2^256); z may alias x.
+ * Convert back with f251_from_montgomery for a canonical ordinary value.
+ *
+ * This is a field operation, not a replacement Poseidon S-box for this field:
+ * 5 divides p-1, so x -> x^5 is not a permutation of Fp.
+ *
+ * @param z result (in [0,2^256))
+ * @param x input value in Montgomery form (in [0,2^256))
+ */
+void f251_montgomery_pow5(felt_t z, const felt_t x);
+
 #endif // __F251_H__
