@@ -7,3 +7,5 @@ sources/test_asm
 sources/test.exe
 sources/test_asm.exe 
 sources/bin_test_adx*
+/build/
+/cmake-build-*/
