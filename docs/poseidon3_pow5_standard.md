@@ -60,14 +60,15 @@ From the repository root:
 make -C sources clean
 make -C sources CC=gcc EXTRA_CFLAGS=-DPERF_MEASUREMENT=100
 gcc -Wall -Wextra -Isources examples/poseidon3_pow5_standard.c -Lsources \
-  -Wl,-rpath,"$PWD/sources" -l_pos_pow5_standard -l_pos_sd \
+  -Wl,-rpath,"$PWD/sources" -l_pos_pow5_standard \
   -o /tmp/poseidon3_demo_standard
 /tmp/poseidon3_demo_standard
 ```
 
-The example prints the baseline state for `[3,1,2]` and checks both identity SD
-and restored SD with multipliers `(3,5,7)` and rotation enabled. It exits nonzero
-on a mismatch. The final success line starts with `PASS`.
+The example calls only `permutation_3_pow5_standard` and prints the baseline
+state for `[3,1,2]`. It has no multiplier configuration, state rotation, or SD
+calls. The CMake executable for it is `poseidon3-target`; see `cmake.md`.
+SD equivalence checks run separately in the tests below.
 
 ## Tests
 
