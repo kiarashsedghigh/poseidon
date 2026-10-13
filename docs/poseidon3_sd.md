@@ -52,6 +52,11 @@ functions take Montgomery states. Round indices are 0..90; modes are
 mutation. The round adds transformed constants to every element, applies the
 S-box, and calls the full or partial mix layer.
 
+When `SD_SCALE=0`, `mix_layer_3_sd` applies the base matrix using only
+additions/subtractions; rotation selects fixed lane indices at compile time.
+Both round modes use this path. With scaling enabled, the function uses the
+precomputed full/partial matrices and the general matrix multiplication path.
+
 ## Matrix transformations
 
 Let `D=diag(A0,A1,A2)`, `M` be the base matrix, and `Pi` the optional rotation.

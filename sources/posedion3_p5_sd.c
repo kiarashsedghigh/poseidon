@@ -37,6 +37,7 @@ static void reduce_sd(felt_t z, const felt_t x)
     }
 }
 
+#if SD_SCALE
 static void multiply_sd(felt_t z, const felt_t x, const felt_t y)
 {
     felt_t a, b;
@@ -46,7 +47,6 @@ static void multiply_sd(felt_t z, const felt_t x, const felt_t y)
     reduce_sd(z, z);
 }
 
-#if SD_SCALE
 static int inverse_sd(felt_t z, const felt_t x)
 {
     const felt_t exponent = {
@@ -138,8 +138,9 @@ int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3])
 
 int mix_layer_3_sd(felt_t state[3], uint8_t round_mode, const poseidon3_ctx_sd *ctx)
 {
-    felt_t result[3] = {{0}}, product;
     if (round_mode != FULL_ROUND_SD && round_mode != PARTIAL_ROUND_SD) return -1;
+#if SD_SCALE
+    felt_t result[3] = {{0}}, product;
     const felt_t (*matrix)[3] = round_mode == FULL_ROUND_SD
                                 ? ctx->mds_full : ctx->mds_partial;
     for (int i = 0; i < 3; i++) {
@@ -150,6 +151,28 @@ int mix_layer_3_sd(felt_t state[3], uint8_t round_mode, const poseidon3_ctx_sd *
         }
     }
     memcpy(state, result, sizeof(result));
+#else
+    /* With unit scaling, both matrices are Pi*M*Pi^-1. Their rows are
+     * sum+2*x0, sum-2*x1, sum-3*x2, at compile-time rotated positions.
+     * Compute sum before overwriting any input. Use basic add/sub because
+     * the legacy assembly x-minus-c*y helper has a zero-input edge case.
+     */
+    (void)ctx;
+#if SD_PERMUTE
+    enum { lane0 = 1, lane1 = 2, lane2 = 0 };
+#else
+    enum { lane0 = 0, lane1 = 1, lane2 = 2 };
+#endif
+    felt_t sum, twice, thrice;
+    f251_sum_state_3(sum, state);
+    f251_add(twice, state[lane0], state[lane0]);
+    f251_add(state[lane0], sum, twice);
+    f251_add(twice, state[lane1], state[lane1]);
+    f251_sub(state[lane1], sum, twice);
+    f251_add(twice, state[lane2], state[lane2]);
+    f251_add(thrice, twice, state[lane2]);
+    f251_sub(state[lane2], sum, thrice);
+#endif
     return 0;
 }
 

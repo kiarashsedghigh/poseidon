@@ -192,6 +192,18 @@ class SDTests(unittest.TestCase):
         self.assertEqual(self.lib.mix_layer_3_sd(actual, 2, ctypes.byref(ctx)), -1)
         self.assertEqual(bytes(actual), before)
 
+    def test_mix_layer_boundary_representatives(self):
+        # Direct calls also accept noncanonical Montgomery representatives.
+        cases = [[0, 0, 0], [R-1]*3, [P, 2*P, R-1]]
+        cases += [[(R-1 if i == lane else 0) for i in range(3)] for lane in range(3)]
+        for _, _, ctx, basic in self.configs:
+            for mode, name in ((15, 'full'), (1, 'partial')):
+                for case in cases:
+                    actual = state(case)
+                    expected = basic.PrimeFieldOps.mds_mixing(values(actual, True), name)
+                    self.assertEqual(self.lib.mix_layer_3_sd(actual, mode, ctypes.byref(ctx)), 0)
+                    self.assertEqual(values(actual, True), expected)
+
     def test_context_reuse(self):
         for _, _, ctx, _ in self.configs:
             before = bytes(ctx)

@@ -37,9 +37,10 @@ defaults are in `sources/poseidon3_sd_config.h`.
 
 When scaling is disabled, the configured multipliers are ignored and effective
 multipliers are `(1,1,1)`. Input multiplication, constant scaling, and matrix
-scaling/inversion setup are compiled out. Matrix multiplication inside rounds
-remains. When rotation is disabled, indices use the identity order; there is no
-runtime rotation flag or conditional. Multiplier values remain configurable
+scaling/inversion setup are compiled out. Mixing then uses additions/subtractions
+with compile-time rotated indices. With scaling enabled, general matrix
+multiplication remains. When rotation is disabled, indices use the identity
+order; there is no runtime rotation flag or conditional. Multiplier values remain configurable
 through `A0`, `A1`, `A2` when scaling is enabled.
 
 Build and run all four comparisons in separate directories:
@@ -57,8 +58,8 @@ done
 ```
 
 Each run reports the compiled options and compares its SD round loop against
-plain. Plain uses a specialized add/subtract mix layer; SD uses general matrix
-multiplication, so their timing difference includes that implementation cost.
+plain. Plain and unscaled SD use specialized add/subtract mixing. Scaled SD uses
+general matrix multiplication, so that timing difference includes its cost.
 
 ## Build and run
 
@@ -105,7 +106,9 @@ Warmup, input resets, output consumption, and printing are excluded. The timer
 boundaries have a small overhead and wall time can include scheduling delays;
 no overhead subtraction is applied.
 
-A volatile checksum consumes every output outside the timed intervals. Results
+A volatile checksum consumes every output outside the timed intervals. Equivalent
+noncanonical Montgomery representations can produce different checksums; use
+the correctness tests to compare field values. Results
 are timing observations for the current compiler/backend and machine, not a
 side-channel-resistance measurement. The benchmark itself does not compare raw
 outputs, which generally differ because SD retains its scaling/rotation.
