@@ -4,6 +4,12 @@ The two implementations are `sources/poseidon3_p5_plain.c` and
 `sources/posedion3_p5_sd.c`, with matching header names. Public function names
 remain `permutation_3_pow5_standard` and `permutation_3_sd`.
 
+Both versions use the fixed prime defined in `sources/f251_params.h`:
+`p = 2^251 + 17*2^192 + 1`. The field backends expose it as `F251_MODULUS`;
+`poseidon3_init_sd` copies that value into `ctx.modulus` for inspection.
+This context field is ordinary (non-Montgomery), read-only metadata, not a
+runtime modulus setting. Rebuild callers after the SD context layout change.
+
 Edit **config.h**:
 
 - `ITER`: measured calls **per version**, default 10000; must be positive.

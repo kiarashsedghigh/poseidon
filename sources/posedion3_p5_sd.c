@@ -8,7 +8,7 @@
  */
 static void reduce_sd(felt_t z, const felt_t x)
 {
-    const uint64_t p3 = 0x0800000000000011ULL;
+    const uint64_t p3 = F251_MODULUS[3];
     uint64_t q = x[3] >> 59;
     felt_t sub = {q, 0, 0, q*p3}, tmp;
     uint64_t borrow = 0, carry = 0;
@@ -19,9 +19,8 @@ static void reduce_sd(felt_t z, const felt_t x)
         borrow = b | (a < borrow);
     }
     uint64_t mask = (uint64_t)0 - borrow;
-    const felt_t p = {1, 0, 0, p3};
     for (int i = 0; i < 4; i++) {
-        uint64_t a = tmp[i] + (p[i] & mask);
+        uint64_t a = tmp[i] + (F251_MODULUS[i] & mask);
         uint64_t c = a < tmp[i];
         z[i] = a + carry;
         carry = c | (z[i] < a);
@@ -41,7 +40,7 @@ static int inverse_sd(felt_t z, const felt_t x)
 {
     const felt_t exponent = {
         0xffffffffffffffffULL, 0xffffffffffffffffULL,
-        0xffffffffffffffffULL, 0x0800000000000010ULL
+        0xffffffffffffffffULL, (F251_MODULUS_HIGH - 1ULL)
     };
     const felt_t one = {1, 0, 0, 0};
     felt_t result, product, a;
@@ -65,7 +64,7 @@ int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3], bool p
     felt_t inverse[3], inverse_power[3];
     const int order[3] = {2, 0, 1};
     const int matrix[3][3] = {{3, 1, 1}, {1, -1, 1}, {1, 1, -2}};
-    const felt_t p = {1, 0, 0, 0x0800000000000011ULL};
+    memcpy(tmp.modulus, F251_MODULUS, sizeof(tmp.modulus));
     tmp.permute = permute;
     for (int i = 0; i < 3; i++) {
         felt_t a;
@@ -89,7 +88,7 @@ int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3], bool p
             int entry = matrix[row][col];
             felt_t base = {(uint64_t)(entry < 0 ? -entry : entry), 0, 0, 0};
             if (entry < 0) {
-                f251_sub(base, p, base);
+                f251_sub(base, tmp.modulus, base);
                 reduce_sd(base, base);
             }
             f251_to_montgomery(base, base);

@@ -42,6 +42,16 @@ class FifthPowerStandardTests(unittest.TestCase):
         cls.cases = [[0]*3, [3, 1, 2], [sd.P-1]*3, [sd.R-1, sd.P, 2*sd.P]]
         cls.cases += [[rng.randrange(sd.R) for _ in range(3)] for _ in range(100)]
 
+    def test_shared_modulus(self):
+        plain_prime = sd.Felt.in_dll(self.lib, 'F251_MODULUS')
+        sd_prime = sd.Felt.in_dll(self.sd_lib, 'F251_MODULUS')
+        ctx = sd.Context()
+        self.assertEqual(self.sd_lib.poseidon3_init_sd(
+            ctypes.byref(ctx), sd.state([1, 1, 2]), True), 0)
+        self.assertEqual(list(plain_prime), list(sd.felt(sd.P)))
+        self.assertEqual(list(plain_prime), list(sd_prime))
+        self.assertEqual(list(plain_prime), list(ctx.modulus))
+
     def test_every_round_and_complete_output(self):
         for case in self.cases:
             actual = sd.state([x*sd.R % sd.P for x in case])

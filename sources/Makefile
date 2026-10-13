@@ -3,7 +3,7 @@ CFLAGS ?= -Wall -Wextra -O3 -fPIC
 CFLAGS += $(EXTRA_CFLAGS)
 CFLAGS_ASM += $(EXTRA_ASMFLAGS)
 CFLAGS_ASM += -DASSEMBLY
-DEPS = f251.h poseidon_rc.h poseidon.h
+DEPS = f251_params.h f251.h poseidon_rc.h poseidon.h
 
 OBJ_C   = f251.o f251_int128.o poseidon_rc.o poseidon.o
 OBJ_ASM = f251_c.o f251_asm.o poseidon_rc.o poseidon_asm.o
@@ -47,18 +47,18 @@ only_c: $(OBJ_C) $(SO_C)
 poseidon_asm.o: poseidon.c
 	$(CC) $(CFLAGS) $(CFLAGS_ASM) -c -o $@ $^
 
-f251_c.o: f251.c
-	$(CC) $(CFLAGS) $(CFLAGS_ASM) -c -o $@ $^
+f251_c.o: f251.c f251.h f251_params.h
+	$(CC) $(CFLAGS) $(CFLAGS_ASM) -c -o $@ $<
 
-f251_asm.o: f251_asm.S
+f251_asm.o: f251_asm.S f251_params.h
 ifneq ($(PLATFORM_X86_64),)
-	$(CC) -c -o $@ $^ $(CFLAGS)
+	$(CC) -c -o $@ $< $(CFLAGS)
 else
 	@echo "[-] Platform is not x86_64, skipping ASM f251_asm.o target"
 endif
 
-f251_int128.o: f251_int128.c
-	$(CC) $(CFLAGS) -c -o $@ $^ 
+f251_int128.o: f251_int128.c f251.h f251_params.h
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 lib_pos.so:
 	$(CC) $(CFLAGS) -shared -o $@ poseidon.o poseidon_rc.o f251.o f251_int128.o
@@ -94,14 +94,14 @@ perf: ../bench/perf
 all: lib_pos_pow5_standard.so
 only_c: lib_pos_pow5_standard.so
 
-poseidon3_p5_plain.o: poseidon3_p5_plain.c poseidon3_p5_plain.h poseidon_rc.h f251.h
+poseidon3_p5_plain.o: poseidon3_p5_plain.c poseidon3_p5_plain.h poseidon_rc.h f251.h f251_params.h
 
 lib_pos_pow5_standard.so: f251.o f251_int128.o poseidon_rc.o poseidon3_p5_plain.o
 	$(CC) $(CFLAGS) -shared -o $@ $^
 
 ifneq ($(PLATFORM_X86_64),)
 all: lib_pos_pow5_standard_asm.so
-poseidon3_p5_plain_asm.o: poseidon3_p5_plain.c poseidon3_p5_plain.h poseidon_rc.h f251.h
+poseidon3_p5_plain_asm.o: poseidon3_p5_plain.c poseidon3_p5_plain.h poseidon_rc.h f251.h f251_params.h
 	$(CC) $(CFLAGS) $(CFLAGS_ASM) -c -o $@ $<
 
 lib_pos_pow5_standard_asm.so: f251_c.o f251_asm.o poseidon_rc.o poseidon3_p5_plain_asm.o platform_utils.c
@@ -112,14 +112,14 @@ endif
 all: lib_pos_sd.so
 only_c: lib_pos_sd.so
 
-posedion3_p5_sd.o: posedion3_p5_sd.c posedion3_p5_sd.h poseidon_rc.h f251.h
+posedion3_p5_sd.o: posedion3_p5_sd.c posedion3_p5_sd.h poseidon_rc.h f251.h f251_params.h
 
 lib_pos_sd.so: f251.o f251_int128.o poseidon_rc.o posedion3_p5_sd.o
 	$(CC) $(CFLAGS) -shared -o $@ $^
 
 ifneq ($(PLATFORM_X86_64),)
 all: lib_pos_sd_asm.so
-posedion3_p5_sd_asm.o: posedion3_p5_sd.c posedion3_p5_sd.h poseidon_rc.h f251.h
+posedion3_p5_sd_asm.o: posedion3_p5_sd.c posedion3_p5_sd.h poseidon_rc.h f251.h f251_params.h
 	$(CC) $(CFLAGS) $(CFLAGS_ASM) -c -o $@ $<
 
 lib_pos_sd_asm.so: f251_c.o f251_asm.o poseidon_rc.o posedion3_p5_sd_asm.o

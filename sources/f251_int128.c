@@ -12,12 +12,14 @@ typedef unsigned __int128 uint128_t;
 ///  Macros
 ////////////////////////////////////////////////////////////////////////////////
 
-#define CONST_P3     0x800000000000011ull   // p = p3 * 2^192 + 1  = [1, 0, 0, p3]
-#define CONST_16P3  0x8000000000000110ull   // 16p = [16, 0, 0, (16p)_3]
+#define CONST_P3     F251_MODULUS_HIGH   // p = p3 * 2^192 + 1  = [1, 0, 0, p3]
+#define CONST_16P3  (16ULL * F251_MODULUS_HIGH)   // 16p = [16, 0, 0, (16p)_3]
 
 ////////////////////////////////////////////////////////////////////////////////
 ///  Constant field elements
 ////////////////////////////////////////////////////////////////////////////////
+
+const felt_t F251_MODULUS = F251_MODULUS_INITIALIZER;
 
 // 2^256 in Montgomery form = (2^256)^2 mod p
 const felt_t CONST_MONT_2256 = {

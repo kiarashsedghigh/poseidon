@@ -30,7 +30,7 @@ MATRIX = PARAMS['Matrix3']
 
 
 class Context(ctypes.Structure):
-    _fields_ = [('multipliers', State), ('round_constants', TABLE),
+    _fields_ = [('modulus', Felt), ('multipliers', State), ('round_constants', TABLE),
                 ('mds_full', Matrix), ('mds_partial', Matrix),
                 ('permute', ctypes.c_bool)]
 
@@ -114,6 +114,12 @@ class SDTests(unittest.TestCase):
         rng = random.Random(12345)
         cls.cases = [[0, 0, 0], [3, 1, 2], [P-1]*3, [R-1, P, 2*P]]
         cls.cases += [[rng.randrange(P) for _ in range(3)] for _ in range(8)]
+
+    def test_shared_modulus(self):
+        shared = Felt.in_dll(self.lib, 'F251_MODULUS')
+        self.assertEqual(list(shared), list(felt(P)))
+        for _, _, ctx, _ in self.configs:
+            self.assertEqual(list(ctx.modulus), list(shared))
 
     def test_constants_and_matrices(self):
         for a, permute, ctx, basic in self.configs:

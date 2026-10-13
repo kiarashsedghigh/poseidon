@@ -2,6 +2,7 @@
 #define __F251_H__
 
 #include <stdint.h>
+#include "f251_params.h"
 
 // In case of non x86_64 platforms, undefine ASSEMBLY
 #if defined(ASSEMBLY) && !defined(__x86_64__)
@@ -16,6 +17,9 @@
 #endif
 
 typedef uint64_t felt_t[4];
+
+/* Ordinary (non-Montgomery) prime, least-significant limb first. */
+extern const felt_t F251_MODULUS;
 
 ////////////////////////////////////////////////////////////////////////////////
 ///  F251 basic operations

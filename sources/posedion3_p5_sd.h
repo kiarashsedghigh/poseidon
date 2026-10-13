@@ -9,10 +9,12 @@
 #define PARTIAL_ROUND_SD 0x1
 
 /* Original C field, round constants, and MDS matrix. Initialize once and reuse.
- * Treat initialized fields as read-only. Field values use Montgomery form.
+ * Treat initialized fields as read-only. Other field values use Montgomery form.
  * Configuration is public; this API supplies no randomness.
  */
 typedef struct {
+    /* Read-only copy of F251_MODULUS in ordinary form; not a field selector. */
+    felt_t modulus;
     felt_t multipliers[3];
     felt_t round_constants[POSEIDON3_ROUNDS_SD][3];
     felt_t mds_full[3][3];
