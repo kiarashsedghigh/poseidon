@@ -51,6 +51,5 @@ int main(int argc, char **argv)
         for (int limb = 3; limb >= 0; limb--) printf("%016" PRIx64, state[i][limb]);
         printf("\n");
     }
-    printf("Python-style hash output is state[1].\n");
     return 0;
 }

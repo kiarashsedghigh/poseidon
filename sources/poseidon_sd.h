@@ -18,8 +18,6 @@ typedef struct {
     felt_t mds_full[3][3];
     felt_t mds_partial[3][3];
     bool permute;
-    uint8_t exponent;
-    uint8_t partial_index;
 } poseidon3_ctx_sd;
 
 /* Uses Python's fifth power and first-element partial S-box, with C's field,
@@ -33,18 +31,6 @@ typedef struct {
  */
 int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3],
                       bool permute);
-/* Experimental variant: exponent is 3 or 5; partial_index is 0..2 BEFORE
- * permutation. (3,2) permits comparison with the old C permutation; (5,0)
- * is the default. This does NOT reproduce Python's BLS12-381 hash.
- * Invalid parameters leave ctx unchanged and return -1.
- */
-int poseidon3_init_custom_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3],
-                             bool permute, uint8_t exponent, uint8_t partial_index);
-
-/* Ordinary state -> scaled/permuted Montgomery state. Apply exactly once. */
-void prepare_state_3_sd(felt_t state[3], const poseidon3_ctx_sd *ctx);
-/* Montgomery state -> ordinary unscaled/unpermuted state. */
-void restore_state_3_sd(felt_t state[3], const poseidon3_ctx_sd *ctx);
 /* Montgomery states. Return -1 for invalid mode/index, leaving state intact;
  * 0 on success. round_idx is a round number 0..90, not a constant offset.
  */
@@ -56,14 +42,5 @@ int round_3_sd(felt_t state[3], int round_idx, uint8_t round_mode,
  * Output remains scaled/permuted as in the uploaded Python.
  */
 void permutation_3_sd(felt_t state[3], const poseidon3_ctx_sd *ctx);
-/* Same, but undo scaling/permutation. With custom (3,2) S-box settings this
- * matches permutation_3, for every valid multiplier/permute setting.
- */
-void permutation_3_restored_sd(felt_t state[3], const poseidon3_ctx_sd *ctx);
-/* Python's input/output convention: initialize [3,a,b], return encoded state[1].
- * Still uses C parameters, not Python's BLS12-381 parameters.
- */
-void poseidon_hash_3_sd(felt_t output, const felt_t preimage[2],
-                        const poseidon3_ctx_sd *ctx);
 
 #endif

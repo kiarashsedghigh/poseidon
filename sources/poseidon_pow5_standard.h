@@ -14,9 +14,6 @@
  * As in SD, x^5 is not invertible in this field; this is experimental.
  */
 
-/* Ordinary inputs -> Montgomery values; inverse returns canonical values. */
-void state_to_montgomery_3_standard(felt_t state[3]);
-void state_from_montgomery_3_standard(felt_t state[3]);
 /* C's base MDS on a Montgomery state, in place. */
 void mix_layer_3_standard(felt_t state[3]);
 /* Montgomery state, round index 0..90. Returns 0 on success or -1 for invalid
@@ -25,7 +22,5 @@ void mix_layer_3_standard(felt_t state[3]);
 int round_3_pow5_standard(felt_t state[3], int round_idx, uint8_t round_mode);
 /* Ordinary input/output; applies the complete 4/83/4 schedule. */
 void permutation_3_pow5_standard(felt_t state[3]);
-/* Python-style wrapper: initial state [3,a,b], return final state[1]. */
-void poseidon_hash_3_pow5_standard(felt_t output, const felt_t preimage[2]);
 
 #endif

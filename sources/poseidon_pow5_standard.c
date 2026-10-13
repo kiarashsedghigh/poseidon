@@ -1,16 +1,5 @@
-#include <string.h>
 #include "poseidon_pow5_standard.h"
 #include "poseidon_rc.h"
-
-void state_to_montgomery_3_standard(felt_t state[3])
-{
-    for (int i = 0; i < 3; i++) f251_to_montgomery(state[i], state[i]);
-}
-
-void state_from_montgomery_3_standard(felt_t state[3])
-{
-    for (int i = 0; i < 3; i++) f251_from_montgomery(state[i], state[i]);
-}
 
 void mix_layer_3_standard(felt_t state[3])
 {
@@ -52,18 +41,9 @@ int round_3_pow5_standard(felt_t state[3], int round_idx, uint8_t round_mode)
 
 void permutation_3_pow5_standard(felt_t state[3])
 {
-    state_to_montgomery_3_standard(state);
+    for (int i = 0; i < 3; i++) f251_to_montgomery(state[i], state[i]);
     for (int r = 0; r < POSEIDON3_ROUNDS_STANDARD; r++)
         round_3_pow5_standard(state, r,
             r < 4 || r >= 87 ? FULL_ROUND_STANDARD : PARTIAL_ROUND_STANDARD);
-    state_from_montgomery_3_standard(state);
-}
-
-void poseidon_hash_3_pow5_standard(felt_t output, const felt_t preimage[2])
-{
-    felt_t state[3] = {{3, 0, 0, 0}, {0}, {0}};
-    memcpy(state[1], preimage[0], sizeof(felt_t));
-    memcpy(state[2], preimage[1], sizeof(felt_t));
-    permutation_3_pow5_standard(state);
-    memcpy(output, state[1], sizeof(felt_t));
+    for (int i = 0; i < 3; i++) f251_from_montgomery(state[i], state[i]);
 }

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "poseidon_pow5_standard.h"
 
-/* Python-style preimage [1,2], initialized as [3,1,2]. */
+/* Input state supplied directly: all three elements are user inputs. */
 int main(void)
 {
     felt_t state[3] = {{3,0,0,0}, {1,0,0,0}, {2,0,0,0}};
@@ -15,6 +15,5 @@ int main(void)
             printf("%016" PRIx64, state[i][limb]);
         printf("\n");
     }
-    printf("Python-style hash is state[1].\n");
     return 0;
 }
