@@ -2,6 +2,16 @@
 #include "posedion3_p5_sd.h"
 #include "poseidon_rc.h"
 
+const int poseidon3_permute_sd = SD_PERMUTE;
+const int poseidon3_scale_sd = SD_SCALE;
+#if SD_PERMUTE
+static const int order_sd[3] = {2, 0, 1};
+#define PARTIAL_INDEX_SD 1
+#else
+static const int order_sd[3] = {0, 1, 2};
+#define PARTIAL_INDEX_SD 0
+#endif
+
 /* Reduce any 256-bit representative modulo the C field prime.
  * q=floor(x/2^251); subtract q*p, then conditionally add p after a borrow.
  * Since p=2^251+17*2^192+1, the provisional result is in (-p,p).
@@ -36,6 +46,7 @@ static void multiply_sd(felt_t z, const felt_t x, const felt_t y)
     reduce_sd(z, z);
 }
 
+#if SD_SCALE
 static int inverse_sd(felt_t z, const felt_t x)
 {
     const felt_t exponent = {
@@ -58,14 +69,17 @@ static int inverse_sd(felt_t z, const felt_t x)
     return nonzero ? 0 : -1;
 }
 
-int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3], bool permute)
+#endif
+
+int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3])
 {
     poseidon3_ctx_sd tmp = {0};
+#if SD_SCALE
     felt_t inverse[3], inverse_power[3];
-    const int order[3] = {2, 0, 1};
+#endif
     const int matrix[3][3] = {{3, 1, 1}, {1, -1, 1}, {1, 1, -2}};
     memcpy(tmp.modulus, F251_MODULUS, sizeof(tmp.modulus));
-    tmp.permute = permute;
+#if SD_SCALE
     for (int i = 0; i < 3; i++) {
         felt_t a;
         reduce_sd(a, multipliers[i]);
@@ -74,17 +88,29 @@ int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3], bool p
         if (inverse_sd(inverse[i], tmp.multipliers[i])) return -1;
         f251_montgomery_pow5(inverse_power[i], inverse[i]);
     }
+#else
+    (void)multipliers;
+    const felt_t one = {1, 0, 0, 0};
+    for (int i = 0; i < 3; i++) {
+        f251_to_montgomery(tmp.multipliers[i], one);
+        reduce_sd(tmp.multipliers[i], tmp.multipliers[i]);
+    }
+#endif
     for (int r = 0; r < POSEIDON3_ROUNDS_SD; r++) {
         for (int i = 0; i < 3; i++) {
-            int source = permute ? order[i] : i;
+            int source = order_sd[i];
+#if SD_SCALE
             multiply_sd(tmp.round_constants[r][i], ROUND_CONST_MONT_P3[r][source],
                          tmp.multipliers[source]);
+#else
+            memcpy(tmp.round_constants[r][i], ROUND_CONST_MONT_P3[r][source], sizeof(felt_t));
+#endif
         }
     }
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            int row = permute ? order[i] : i;
-            int col = permute ? order[j] : j;
+            int row = order_sd[i];
+            int col = order_sd[j];
             int entry = matrix[row][col];
             felt_t base = {(uint64_t)(entry < 0 ? -entry : entry), 0, 0, 0};
             if (entry < 0) {
@@ -92,12 +118,18 @@ int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3], bool p
                 reduce_sd(base, base);
             }
             f251_to_montgomery(base, base);
+#if SD_SCALE
             multiply_sd(base, base, tmp.multipliers[row]);
             // Full: D M D^-5. Partial: exponent 5 only on the first column.
             // PERMUTE conjugates both matrices by the [2,0,1] rotation.
             multiply_sd(tmp.mds_full[i][j], base, inverse_power[col]);
             multiply_sd(tmp.mds_partial[i][j], base,
                          col == 0 ? inverse_power[col] : inverse[col]);
+#else
+            reduce_sd(base, base);
+            memcpy(tmp.mds_full[i][j], base, sizeof(felt_t));
+            memcpy(tmp.mds_partial[i][j], base, sizeof(felt_t));
+#endif
         }
     }
     memcpy(ctx, &tmp, sizeof(tmp));
@@ -137,8 +169,7 @@ int round_3_sd(felt_t state[3], int round_idx, uint8_t round_mode,
     if (round_mode == FULL_ROUND_SD) {
         for (int i = 0; i < 3; i++) f251_montgomery_pow5(state[i], state[i]);
     } else {
-        int active = ctx->permute ? 1 : 0;
-        f251_montgomery_pow5(state[active], state[active]);
+        f251_montgomery_pow5(state[PARTIAL_INDEX_SD], state[PARTIAL_INDEX_SD]);
     }
 
     // MixLayer: full and partial rounds use different transformed matrices.
@@ -149,14 +180,15 @@ void permutation_3_sd(felt_t state[3], const poseidon3_ctx_sd *ctx)
 {
     // Convert, scale, and optionally rotate the input once before the rounds.
     felt_t scaled[3];
-    const int order[3] = {2, 0, 1};
     for (int i = 0; i < 3; i++) {
         reduce_sd(scaled[i], state[i]);
         f251_to_montgomery(scaled[i], scaled[i]);
+#if SD_SCALE
         multiply_sd(scaled[i], scaled[i], ctx->multipliers[i]);
+#endif
     }
     for (int i = 0; i < 3; i++)
-        memcpy(state[i], scaled[ctx->permute ? order[i] : i], sizeof(felt_t));
+        memcpy(state[i], scaled[order_sd[i]], sizeof(felt_t));
 
     for (int r = 0; r < POSEIDON3_ROUNDS_SD; r++)
         round_3_sd(state, r, r < 4 || r >= 87 ? FULL_ROUND_SD : PARTIAL_ROUND_SD, ctx);

@@ -31,8 +31,7 @@ MATRIX = PARAMS['Matrix3']
 
 class Context(ctypes.Structure):
     _fields_ = [('modulus', Felt), ('multipliers', State), ('round_constants', TABLE),
-                ('mds_full', Matrix), ('mds_partial', Matrix),
-                ('permute', ctypes.c_bool)]
+                ('mds_full', Matrix), ('mds_partial', Matrix)]
 
 
 def felt(x):
@@ -96,7 +95,7 @@ class SDTests(unittest.TestCase):
         cls.lib = ctypes.CDLL(str(LIBRARY))
         pointer = ctypes.POINTER(Context)
         signatures = {
-            'poseidon3_init_sd': ([pointer, ctypes.POINTER(Felt), ctypes.c_bool], ctypes.c_int),
+            'poseidon3_init_sd': ([pointer, ctypes.POINTER(Felt)], ctypes.c_int),
             'permutation_3_sd': ([ctypes.POINTER(Felt), pointer], None),
             'round_3_sd': ([ctypes.POINTER(Felt), ctypes.c_int, ctypes.c_uint8, pointer], ctypes.c_int),
             'mix_layer_3_sd': ([ctypes.POINTER(Felt), ctypes.c_uint8, pointer], ctypes.c_int),
@@ -104,13 +103,15 @@ class SDTests(unittest.TestCase):
         for name, (args, result) in signatures.items():
             getattr(cls.lib, name).argtypes = args
             getattr(cls.lib, name).restype = result
+        cls.permute = bool(ctypes.c_int.in_dll(cls.lib, 'poseidon3_permute_sd').value)
+        cls.scale = bool(ctypes.c_int.in_dll(cls.lib, 'poseidon3_scale_sd').value)
         cls.configs = []
-        for a in ((1, 1, 2), (1, 1, 1), (3, 5, 7), (P-1, P-2, 2), (P+1, 2*P+3, R-1)):
-            for permute in (False, True):
-                ctx = Context()
-                assert cls.lib.poseidon3_init_sd(ctypes.byref(ctx), state(a), permute) == 0
-                basic = reference(a, permute)
-                cls.configs.append((a, permute, ctx, basic))
+        for supplied in ((1, 1, 2), (1, 1, 1), (3, 5, 7), (P-1, P-2, 2), (P+1, 2*P+3, R-1)):
+            ctx = Context()
+            assert cls.lib.poseidon3_init_sd(ctypes.byref(ctx), state(supplied)) == 0
+            a = supplied if cls.scale else (1, 1, 1)
+            basic = reference(a, cls.permute)
+            cls.configs.append((a, cls.permute, ctx, basic))
         rng = random.Random(12345)
         cls.cases = [[0, 0, 0], [3, 1, 2], [P-1]*3, [R-1, P, 2*P]]
         cls.cases += [[rng.randrange(P) for _ in range(3)] for _ in range(8)]
@@ -168,8 +169,18 @@ class SDTests(unittest.TestCase):
                 ctx = Context()
                 ctypes.memset(ctypes.byref(ctx), 0xA5, ctypes.sizeof(ctx))
                 before = bytes(ctx)
-                self.assertEqual(self.lib.poseidon3_init_sd(ctypes.byref(ctx), state(a), True), -1)
-                self.assertEqual(bytes(ctx), before)
+                result = self.lib.poseidon3_init_sd(ctypes.byref(ctx), state(a))
+                if self.scale:
+                    self.assertEqual(result, -1)
+                    self.assertEqual(bytes(ctx), before)
+                else:
+                    self.assertEqual(result, 0)
+                    self.assertEqual(values(ctx.multipliers, True), [1, 1, 1])
+                    self.assertEqual(bytes(ctx), bytes(self.configs[0][2]))
+        if not self.scale:
+            ctx = Context()
+            self.assertEqual(self.lib.poseidon3_init_sd(ctypes.byref(ctx), None), 0)
+            self.assertEqual(bytes(ctx), bytes(self.configs[0][2]))
         ctx = self.configs[0][2]
         for r, mode in ((-1, 15), (91, 1), (0, 0), (0, 2)):
             actual = state([1, 2, 3])

@@ -1,7 +1,7 @@
 #ifndef POSEDION3_P5_SD_H
 #define POSEDION3_P5_SD_H
 
-#include <stdbool.h>
+#include "poseidon3_sd_config.h"
 #include "f251.h"
 
 #define POSEIDON3_ROUNDS_SD 91
@@ -19,20 +19,24 @@ typedef struct {
     felt_t round_constants[POSEIDON3_ROUNDS_SD][3];
     felt_t mds_full[3][3];
     felt_t mds_partial[3][3];
-    bool permute;
 } poseidon3_ctx_sd;
+
+/* Inspect the options compiled into the linked SD implementation. */
+extern const int poseidon3_permute_sd;
+extern const int poseidon3_scale_sd;
 
 /* Uses Python's fifth power and first-element partial S-box, with C's field,
  * constants, 4/83/4 round schedule and base MDS. Multipliers are ordinary
  * integers; Python's example values are {{1,0,0,0},{1,0,0,0},{2,0,0,0}}.
- * permute=true rotates [s0,s1,s2] to [s2,s0,s1].
- * Returns -1 for any multiplier zero modulo p, leaving ctx unchanged; 0 on
- * success. All pointers must be non-null. The C original 91x3 constants are
- * scaled and permuted internally. x^5 is not invertible in this field;
+ * SD_PERMUTE=1 rotates [s0,s1,s2] to [s2,s0,s1].
+ * SD_SCALE=0 ignores multipliers (which may be NULL) and uses unit scaling.
+ * With scaling enabled, returns -1 for any multiplier zero modulo p,
+ * leaving ctx unchanged; otherwise returns 0 on success. ctx must be non-null;
+ * multipliers must be non-null when SD_SCALE=1. Original C constants are
+ * transformed according to the compiled options. x^5 is not invertible in this field;
  * this is an experimental construction, not the original Poseidon permutation.
  */
-int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3],
-                      bool permute);
+int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3]);
 /* Montgomery states. Return -1 for invalid mode/index, leaving state intact;
  * 0 on success. round_idx is a round number 0..90, not a constant offset.
  */

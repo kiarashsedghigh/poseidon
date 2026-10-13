@@ -42,7 +42,7 @@ int main(void)
     const uint64_t warmup = (uint64_t)WARMUP;
 
     // Precompute SD constants/matrices once, outside all measured intervals.
-    if (poseidon3_init_sd(&ctx, BENCH_MULTIPLIERS, SD_PERMUTE)) {
+    if (poseidon3_init_sd(&ctx, BENCH_MULTIPLIERS)) {
         fprintf(stderr, "SD multipliers must be nonzero modulo the field prime.\n");
         return 1;
     }
@@ -50,11 +50,19 @@ int main(void)
     // Prepare each initial state once; only the round loops are timed.
     for (int i = 0; i < 3; i++) {
         f251_to_montgomery(plain_input[i], BENCH_INPUT[i]);
+#if SD_SCALE
         f251_montgomery_mult(scaled[i], plain_input[i], ctx.multipliers[i]);
+#else
+        memcpy(scaled[i], plain_input[i], sizeof(felt_t));
+#endif
     }
+#if SD_PERMUTE
     const int order[3] = {2, 0, 1};
+#else
+    const int order[3] = {0, 1, 2};
+#endif
     for (int i = 0; i < 3; i++)
-        memcpy(sd_input[i], scaled[ctx.permute ? order[i] : i], sizeof(felt_t));
+        memcpy(sd_input[i], scaled[order[i]], sizeof(felt_t));
 
     for (uint64_t i = 0; i < warmup; i++) {
         memcpy(state, plain_input, sizeof(state));
@@ -85,12 +93,17 @@ int main(void)
 
     printf("Iterations per version: %" PRIu64 " (warmup: %" PRIu64 ")\n",
            iterations, warmup);
-    printf("SD rotation: %s; multipliers (hex):\n", SD_PERMUTE ? "on" : "off");
+    printf("Compiled SD options: rotation=%d, scaling=%d\n", SD_PERMUTE, SD_SCALE);
+#if SD_SCALE
+    printf("Multipliers (hex):\n");
     for (int i = 0; i < 3; i++) {
         printf("  A%d = 0x", i);
         for (int j = 3; j >= 0; j--) printf("%016" PRIx64, BENCH_MULTIPLIERS[i][j]);
         putchar('\n');
     }
+#else
+    printf("Effective multipliers: (1, 1, 1); configured multipliers ignored.\n");
+#endif
     printf("Plain: total %.3f ms, average %.3f us/91-round block\n",
            plain_ns / 1e6, plain_ns / (double)iterations / 1e3);
     printf("SD:    total %.3f ms, average %.3f us/91-round block\n",

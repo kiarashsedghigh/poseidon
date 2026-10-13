@@ -33,7 +33,7 @@ class FifthPowerStandardTests(unittest.TestCase):
             getattr(cls.lib, name).restype = None
         cls.lib.round_3_pow5_standard.argtypes = [field_pointer, ctypes.c_int, ctypes.c_uint8]
         cls.lib.round_3_pow5_standard.restype = ctypes.c_int
-        cls.sd_lib.poseidon3_init_sd.argtypes = [ctypes.POINTER(sd.Context), field_pointer, ctypes.c_bool]
+        cls.sd_lib.poseidon3_init_sd.argtypes = [ctypes.POINTER(sd.Context), field_pointer]
         cls.sd_lib.poseidon3_init_sd.restype = ctypes.c_int
         for name in ('permutation_3_sd',):
             getattr(cls.sd_lib, name).argtypes = [field_pointer, ctypes.POINTER(sd.Context)]
@@ -47,7 +47,7 @@ class FifthPowerStandardTests(unittest.TestCase):
         sd_prime = sd.Felt.in_dll(self.sd_lib, 'F251_MODULUS')
         ctx = sd.Context()
         self.assertEqual(self.sd_lib.poseidon3_init_sd(
-            ctypes.byref(ctx), sd.state([1, 1, 2]), True), 0)
+            ctypes.byref(ctx), sd.state([1, 1, 2])), 0)
         self.assertEqual(list(plain_prime), list(sd.felt(sd.P)))
         self.assertEqual(list(plain_prime), list(sd_prime))
         self.assertEqual(list(plain_prime), list(ctx.modulus))
@@ -68,23 +68,25 @@ class FifthPowerStandardTests(unittest.TestCase):
             self.assertEqual([sd.integer(x) for x in complete], expected)
 
     def test_sd_comparison(self):
-        for a in ((1,1,1), (1,1,2), (3,5,7), (sd.P-1,sd.P-2,2), (sd.P+1,2*sd.P+3,sd.R-1)):
-            for permute in (False, True):
-                ctx = sd.Context()
-                self.assertEqual(self.sd_lib.poseidon3_init_sd(ctypes.byref(ctx), sd.state(a), permute), 0)
-                order = [2,0,1] if permute else [0,1,2]
-                for case in self.cases[:12]:
-                    with self.subTest(a=a, permute=permute, case=case):
-                        baseline, encoded = sd.state(case), sd.state(case)
-                        self.lib.permutation_3_pow5_standard(baseline)
-                        self.sd_lib.permutation_3_sd(encoded, ctypes.byref(ctx))
-                        # Decode only in the test; the C permutation returns SD state.
-                        decoded = [sd.integer(encoded[(i+1)%3 if permute else i])*pow(a[i], -1, sd.P) % sd.P for i in range(3)]
-                        self.assertEqual(decoded, [sd.integer(x) for x in baseline])
-                        expected = [sd.integer(baseline[j])*a[j] % sd.P for j in order]
-                        self.assertEqual([sd.integer(x) for x in encoded], expected)
-                        if a == (1,1,1) and not permute:
-                            self.assertEqual(bytes(encoded), bytes(baseline))
+        permute = bool(ctypes.c_int.in_dll(self.sd_lib, 'poseidon3_permute_sd').value)
+        scale = bool(ctypes.c_int.in_dll(self.sd_lib, 'poseidon3_scale_sd').value)
+        for supplied in ((1,1,1), (1,1,2), (3,5,7), (sd.P-1,sd.P-2,2), (sd.P+1,2*sd.P+3,sd.R-1)):
+            ctx = sd.Context()
+            self.assertEqual(self.sd_lib.poseidon3_init_sd(ctypes.byref(ctx), sd.state(supplied)), 0)
+            a = supplied if scale else (1,1,1)
+            order = [2,0,1] if permute else [0,1,2]
+            for case in self.cases[:12]:
+                with self.subTest(a=a, permute=permute, case=case):
+                    baseline, encoded = sd.state(case), sd.state(case)
+                    self.lib.permutation_3_pow5_standard(baseline)
+                    self.sd_lib.permutation_3_sd(encoded, ctypes.byref(ctx))
+                    # Decode only in the test; the C permutation returns SD state.
+                    decoded = [sd.integer(encoded[(i+1)%3 if permute else i])*pow(a[i], -1, sd.P) % sd.P for i in range(3)]
+                    self.assertEqual(decoded, [sd.integer(x) for x in baseline])
+                    expected = [sd.integer(baseline[j])*a[j] % sd.P for j in order]
+                    self.assertEqual([sd.integer(x) for x in encoded], expected)
+                    if a == (1,1,1) and not permute:
+                        self.assertEqual(bytes(encoded), bytes(baseline))
 
 
     def test_mix_layer(self):

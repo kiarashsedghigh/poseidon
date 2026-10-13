@@ -1,7 +1,6 @@
 #ifndef POSEIDON_BENCH_CONFIG_H
 #define POSEIDON_BENCH_CONFIG_H
 
-#include <stdbool.h>
 #include "f251.h"
 
 /* Measured 91-round blocks per version. Also overridable with -DITER=... . */
@@ -14,9 +13,6 @@
 #define WARMUP 100
 #endif
 
-#ifndef SD_PERMUTE
-#define SD_PERMUTE true
-#endif
 #ifndef A0
 #define A0 1ULL
 #endif

@@ -3,7 +3,10 @@ CFLAGS ?= -Wall -Wextra -O3 -fPIC
 CFLAGS += $(EXTRA_CFLAGS)
 CFLAGS_ASM += $(EXTRA_ASMFLAGS)
 CFLAGS_ASM += -DASSEMBLY
-DEPS = f251_params.h f251.h poseidon_rc.h poseidon.h
+SD_PERMUTE ?= 1
+SD_SCALE ?= 1
+CFLAGS += -DSD_PERMUTE=$(SD_PERMUTE) -DSD_SCALE=$(SD_SCALE)
+DEPS = poseidon3_sd_config.h f251_params.h f251.h poseidon_rc.h poseidon.h
 
 OBJ_C   = f251.o f251_int128.o poseidon_rc.o poseidon.o
 OBJ_ASM = f251_c.o f251_asm.o poseidon_rc.o poseidon_asm.o
@@ -112,14 +115,14 @@ endif
 all: lib_pos_sd.so
 only_c: lib_pos_sd.so
 
-posedion3_p5_sd.o: posedion3_p5_sd.c posedion3_p5_sd.h poseidon_rc.h f251.h f251_params.h
+posedion3_p5_sd.o: posedion3_p5_sd.c posedion3_p5_sd.h poseidon3_sd_config.h poseidon_rc.h f251.h f251_params.h
 
 lib_pos_sd.so: f251.o f251_int128.o poseidon_rc.o posedion3_p5_sd.o
 	$(CC) $(CFLAGS) -shared -o $@ $^
 
 ifneq ($(PLATFORM_X86_64),)
 all: lib_pos_sd_asm.so
-posedion3_p5_sd_asm.o: posedion3_p5_sd.c posedion3_p5_sd.h poseidon_rc.h f251.h f251_params.h
+posedion3_p5_sd_asm.o: posedion3_p5_sd.c posedion3_p5_sd.h poseidon3_sd_config.h poseidon_rc.h f251.h f251_params.h
 	$(CC) $(CFLAGS) $(CFLAGS_ASM) -c -o $@ $<
 
 lib_pos_sd_asm.so: f251_c.o f251_asm.o poseidon_rc.o posedion3_p5_sd_asm.o

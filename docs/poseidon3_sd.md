@@ -16,15 +16,24 @@ and the first-element partial S-box (index 1 after rotation).
 
 poseidon3_ctx_sd ctx;
 felt_t multipliers[3] = {{1,0,0,0}, {1,0,0,0}, {2,0,0,0}};
-if (poseidon3_init_sd(&ctx, multipliers, true) != 0) return 1;
+if (poseidon3_init_sd(&ctx, multipliers) != 0) return 1;
 felt_t state[3] = {{3,0,0,0}, {1,0,0,0}, {2,0,0,0}};
 permutation_3_sd(state, &ctx);
 ```
 
-Multipliers are ordinary 256-bit integers in four little-endian limbs. Zero
-modulo p is rejected without changing the context. The boolean selects rotation
-`[s0,s1,s2] -> [s2,s0,s1]`. Initialize once per configuration and reuse the
-read-only context. The exponent and partial S-box position are fixed.
+Rotation and scaling are selected at compile time: CMake options `SD_PERMUTE`
+and `SD_SCALE` default to `ON`. Direct compiler definitions use `0` or `1`.
+All SD callers must use the same definitions as the implementation. The runtime
+rotation argument and `ctx.permute` have been removed; rebuild all callers.
+The exported constants `poseidon3_permute_sd` and `poseidon3_scale_sd` report
+the options compiled into a linked library for inspection/testing.
+
+When scaling is enabled, multipliers are ordinary 256-bit integers in four
+little-endian limbs. Zero modulo p is rejected without changing the context.
+When scaling is disabled, multipliers are ignored (the pointer may be NULL),
+effective multipliers are `(1,1,1)`, and the scaling/inversion setup is compiled
+out. `SD_PERMUTE=1` selects `[s0,s1,s2] -> [s2,s0,s1]`, with no runtime flag.
+Initialize once per multiplier configuration and reuse the read-only context.
 
 The public API contains `poseidon3_init_sd`, `permutation_3_sd`, `round_3_sd`,
 and `mix_layer_3_sd`. The runtime structure follows the original C code:
@@ -69,7 +78,7 @@ physical side-channel resistance, and the code generates no fresh random masks.
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target poseidon3-sd
 ./build/poseidon3-sd             # rotation on, A=(1,1,2)
-./build/poseidon3-sd 0 3 5 7    # rotation off, A=(3,5,7)
+./build/poseidon3-sd 3 5 7       # compiled options, A=(3,5,7)
 ```
 
 For reference tests, build the shared libraries with the existing Makefile:
@@ -84,6 +93,8 @@ python3 tests/test_poseidon3_sd.py sources/lib_pos_sd_asm.so
 
 Use `ISO_C=1` after cleaning for the ISO C backend. Tests compare constants,
 matrices, every intermediate round, and all final outputs with the uploaded
-Python arithmetic/matrix reference adapted to the C parameters. They cover both
-rotation flags, boundary and random inputs, multiple multiplier sets, invalid
-arguments, and reuse of the same context.
+Python arithmetic/matrix reference adapted to the C parameters. They read the compiled options from the linked library and cover boundary and
+random inputs, multiple multiplier sets, invalid arguments, and context reuse.
+Run `python3 tests/test_poseidon3_build_options.py` to build and test all four
+combinations on default and portable C backends. See `../bench/README.md` for
+commands to benchmark each combination against plain.

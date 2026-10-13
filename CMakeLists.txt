@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(poseidon3_examples LANGUAGES C)
 
+option(SD_PERMUTE "Compile SD with the [2,0,1] rotation" ON)
+option(SD_SCALE "Compile SD with multiplier scaling" ON)
+
 option(POSEIDON_ISO_C "Use the portable ISO C field backend" OFF)
 
 # A source list, not an additional build target.
@@ -35,4 +38,9 @@ foreach(target IN ITEMS poseidon3-target poseidon3-sd perf)
     if(POSEIDON_ISO_C)
         target_compile_definitions(${target} PRIVATE ISO_C=1)
     endif()
+endforeach()
+
+foreach(target IN ITEMS poseidon3-sd perf)
+    target_compile_definitions(${target} PRIVATE
+        SD_PERMUTE=$<BOOL:${SD_PERMUTE}> SD_SCALE=$<BOOL:${SD_SCALE}>)
 endforeach()
