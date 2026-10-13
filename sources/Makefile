@@ -82,23 +82,29 @@ test_asm:
 endif
 
 clean:
-	rm -f *.o *.so test test_asm test.exe test_asm.exe bin_test_adx*
+	rm -f *.o *.so test test_asm test.exe test_asm.exe bin_test_adx* ../bench/perf
+
+.PHONY: perf
+perf: ../bench/perf
+
+../bench/perf: ../bench/perf.c ../bench/config.h poseidon3_p5_plain.h posedion3_p5_sd.h f251.o f251_int128.o poseidon_rc.o poseidon3_p5_plain.o posedion3_p5_sd.o
+	$(CC) $(CFLAGS) -I. -o $@ $(filter %.c %.o,$^)
 
 # Non-SD fifth-power baseline, built independently of the SD implementation.
 all: lib_pos_pow5_standard.so
 only_c: lib_pos_pow5_standard.so
 
-poseidon_pow5_standard.o: poseidon_pow5_standard.c poseidon_pow5_standard.h poseidon_rc.h f251.h
+poseidon3_p5_plain.o: poseidon3_p5_plain.c poseidon3_p5_plain.h poseidon_rc.h f251.h
 
-lib_pos_pow5_standard.so: f251.o f251_int128.o poseidon_rc.o poseidon_pow5_standard.o
+lib_pos_pow5_standard.so: f251.o f251_int128.o poseidon_rc.o poseidon3_p5_plain.o
 	$(CC) $(CFLAGS) -shared -o $@ $^
 
 ifneq ($(PLATFORM_X86_64),)
 all: lib_pos_pow5_standard_asm.so
-poseidon_pow5_standard_asm.o: poseidon_pow5_standard.c poseidon_pow5_standard.h poseidon_rc.h f251.h
+poseidon3_p5_plain_asm.o: poseidon3_p5_plain.c poseidon3_p5_plain.h poseidon_rc.h f251.h
 	$(CC) $(CFLAGS) $(CFLAGS_ASM) -c -o $@ $<
 
-lib_pos_pow5_standard_asm.so: f251_c.o f251_asm.o poseidon_rc.o poseidon_pow5_standard_asm.o platform_utils.c
+lib_pos_pow5_standard_asm.so: f251_c.o f251_asm.o poseidon_rc.o poseidon3_p5_plain_asm.o platform_utils.c
 	$(CC) $(CFLAGS) $(CFLAGS_ASM) -shared -o $@ $^
 endif
 
@@ -106,16 +112,16 @@ endif
 all: lib_pos_sd.so
 only_c: lib_pos_sd.so
 
-poseidon_sd.o: poseidon_sd.c poseidon_sd.h poseidon_rc.h f251.h
+posedion3_p5_sd.o: posedion3_p5_sd.c posedion3_p5_sd.h poseidon_rc.h f251.h
 
-lib_pos_sd.so: f251.o f251_int128.o poseidon_rc.o poseidon_sd.o
+lib_pos_sd.so: f251.o f251_int128.o poseidon_rc.o posedion3_p5_sd.o
 	$(CC) $(CFLAGS) -shared -o $@ $^
 
 ifneq ($(PLATFORM_X86_64),)
 all: lib_pos_sd_asm.so
-poseidon_sd_asm.o: poseidon_sd.c poseidon_sd.h poseidon_rc.h f251.h
+posedion3_p5_sd_asm.o: posedion3_p5_sd.c posedion3_p5_sd.h poseidon_rc.h f251.h
 	$(CC) $(CFLAGS) $(CFLAGS_ASM) -c -o $@ $<
 
-lib_pos_sd_asm.so: f251_c.o f251_asm.o poseidon_rc.o poseidon_sd_asm.o
+lib_pos_sd_asm.so: f251_c.o f251_asm.o poseidon_rc.o posedion3_p5_sd_asm.o
 	$(CC) $(CFLAGS) $(CFLAGS_ASM) -shared -o $@ $^ platform_utils.c
 endif

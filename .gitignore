@@ -9,3 +9,4 @@ sources/test_asm.exe
 sources/bin_test_adx*
 /build/
 /cmake-build-*/
+/bench/perf

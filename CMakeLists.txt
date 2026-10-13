@@ -12,17 +12,24 @@ set(POSEIDON_FIELD_SOURCES
 
 add_executable(poseidon3-target
     examples/poseidon3_pow5_standard.c
-    sources/poseidon_pow5_standard.c
+    sources/poseidon3_p5_plain.c
     ${POSEIDON_FIELD_SOURCES}
 )
 
 add_executable(poseidon3-sd
     examples/poseidon3_sd.c
-    sources/poseidon_sd.c
+    sources/posedion3_p5_sd.c
     ${POSEIDON_FIELD_SOURCES}
 )
 
-foreach(target IN ITEMS poseidon3-target poseidon3-sd)
+add_executable(perf
+    bench/perf.c
+    sources/poseidon3_p5_plain.c
+    sources/posedion3_p5_sd.c
+    ${POSEIDON_FIELD_SOURCES}
+)
+
+foreach(target IN ITEMS poseidon3-target poseidon3-sd perf)
     target_include_directories(${target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/sources")
     target_compile_features(${target} PRIVATE c_std_99)
     if(POSEIDON_ISO_C)

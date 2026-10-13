@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "poseidon_sd.h"
+#include "posedion3_p5_sd.h"
 
 /* Demo uses 64-bit multipliers; the library accepts full 256-bit felt_t values.
  * Usage: demo_sd [0|1 [A0 A1 A2]], defaults: 1 1 1 2.

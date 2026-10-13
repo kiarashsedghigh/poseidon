@@ -1,12 +1,12 @@
 # Standard three-element permutation
 
-`poseidon3-target` runs the standard path in `sources/poseidon_pow5_standard.c`.
+`poseidon3-target` runs the standard path in `sources/poseidon3_p5_plain.c`.
 It has no scaling, state rotation, SD configuration, or hashing wrapper.
 The caller supplies all three state elements, and the function replaces them
 with all three output elements. No domain tag is inserted or output selected.
 
 ```c
-#include "poseidon_pow5_standard.h"
+#include "poseidon3_p5_plain.h"
 
 felt_t state[3] = {{3,0,0,0}, {1,0,0,0}, {2,0,0,0}};
 permutation_3_pow5_standard(state);

@@ -1,6 +1,6 @@
 # Three-element SD permutation
 
-`poseidon3-sd` runs `sources/poseidon_sd.c`. The caller provides three state
+`poseidon3-sd` runs `sources/posedion3_p5_sd.c`. The caller provides three state
 values; all three output values are returned in place. There is no hash wrapper,
 implicit domain tag, selected output element, or automatic inverse SD transform.
 
@@ -12,7 +12,7 @@ The path uses the C prime `p=2^251+17*2^192+1`, original 91x3 constants,
 and the first-element partial S-box (index 1 after rotation).
 
 ```c
-#include "poseidon_sd.h"
+#include "posedion3_p5_sd.h"
 
 poseidon3_ctx_sd ctx;
 felt_t multipliers[3] = {{1,0,0,0}, {1,0,0,0}, {2,0,0,0}};

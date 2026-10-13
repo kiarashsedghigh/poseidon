@@ -1,6 +1,6 @@
 #include <inttypes.h>
 #include <stdio.h>
-#include "poseidon_pow5_standard.h"
+#include "poseidon3_p5_plain.h"
 
 /* Input state supplied directly: all three elements are user inputs. */
 int main(void)

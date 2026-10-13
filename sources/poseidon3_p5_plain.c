@@ -1,4 +1,4 @@
-#include "poseidon_pow5_standard.h"
+#include "poseidon3_p5_plain.h"
 #include "poseidon_rc.h"
 
 void mix_layer_3_standard(felt_t state[3])

@@ -1,0 +1,61 @@
+# Plain and SD permutation timing
+
+The two implementations are `sources/poseidon3_p5_plain.c` and
+`sources/posedion3_p5_sd.c`, with matching header names. Public function names
+remain `permutation_3_pow5_standard` and `permutation_3_sd`.
+
+Edit **config.h**:
+
+- `ITER`: measured calls **per version**, default 10000; must be positive.
+- `WARMUP`: untimed calls per version, default 100; may be zero.
+- `SD_PERMUTE`: enable/disable SD rotation.
+- `A0`, `A1`, `A2`: SD multipliers, default `(1,1,2)`.
+- `BENCH_INPUT`: the three raw input values, default `[3,1,2]`.
+- `BENCH_MULTIPLIERS`: edit upper limbs here for full 256-bit multiplier values.
+
+Each array element is stored as four little-endian 64-bit limbs. The macros
+can also be overridden by compiler definitions, e.g. `-DITER=100`.
+
+## Build and run
+
+From the repository root on a POSIX system (e.g. Linux):
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target perf
+./build/perf
+```
+
+In CLion, select a Release CMake profile, reload CMake, and select target `perf`.
+The existing `poseidon3-target` and `poseidon3-sd` examples remain available.
+
+The Makefile also builds the benchmark:
+
+```sh
+make -C sources perf CC=gcc
+./bench/perf
+```
+
+Rebuild after editing `config.h`. Clean before switching the Makefile's compiler
+flags or backend. For ISO C use `-DPOSEIDON_ISO_C=ON` with CMake, or `ISO_C=1`
+with Make. Both benchmark implementations always use the same selected backend.
+
+## What is measured
+
+`perf.c` calls each complete permutation `ITER` times and reports summed elapsed
+time in milliseconds, arithmetic mean in microseconds per permutation, and the
+SD/plain time ratio. It uses `clock_gettime(CLOCK_MONOTONIC)` wall-clock time
+around each call. Each invocation starts from the **same raw input**, so outputs
+are not fed back into later invocations.
+
+The measured calls include conversion to/from Montgomery form and all rounds.
+The SD call also includes its input scaling and optional rotation. One-time SD
+matrix/constant precomputation, warmup, input resets, output consumption, and
+printing are excluded. The timer boundaries have a small overhead and wall time
+can include scheduling delays; no overhead subtraction is applied.
+
+A volatile checksum consumes every output outside the timed intervals. Results
+are timing observations for the current compiler/backend and machine, not a
+side-channel-resistance measurement. The benchmark itself does not compare raw
+outputs, which generally differ because SD retains its scaling/rotation.
+Correctness comparisons remain in the separate Python test suites.

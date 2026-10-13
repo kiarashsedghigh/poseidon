@@ -1,5 +1,5 @@
 #include <string.h>
-#include "poseidon_sd.h"
+#include "posedion3_p5_sd.h"
 #include "poseidon_rc.h"
 
 /* Reduce any 256-bit representative modulo the C field prime.

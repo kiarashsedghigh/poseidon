@@ -1,5 +1,5 @@
-#ifndef POSEIDON_POW5_STANDARD_H
-#define POSEIDON_POW5_STANDARD_H
+#ifndef POSEIDON3_P5_PLAIN_H
+#define POSEIDON3_P5_PLAIN_H
 
 #include "f251.h"
 

@@ -22,8 +22,8 @@ Both use the C field/constants/base matrix and fifth-power, first-element
 partial S-box. The earlier cube-based functions are unchanged. These examples
 remain experimental: fifth power is not invertible over the C field.
 
-CMake defines only these two executable targets and builds their sources
-directly; there are no helper library or CTest targets. No prior Makefile build
+CMake defines these two example targets plus `perf` for the benchmark and builds
+their sources directly; there are no helper library or CTest targets. No prior Makefile build
 or shared-library search path is needed. It uses the C backend
 with automatic `__int128` selection; enable `-DPOSEIDON_ISO_C=ON` for ISO C.
 The existing Makefile remains available for assembly builds.
@@ -38,3 +38,6 @@ SD comparison tests remain separate in `tests/test_poseidon3_pow5_standard.py`;
 see `poseidon3_pow5_standard.md` for the Makefile build and Python test commands.
 After pulling the simplified configuration, reload CMake in CLion. If old
 targets still appear, use **Reset Cache and Reload Project**.
+
+For the timing benchmark, edit `bench/config.h`, build target `perf`, and run
+`./build/perf`. See `../bench/README.md` for configuration and measurement details.
