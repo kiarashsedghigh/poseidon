@@ -130,6 +130,7 @@ class SDTests(unittest.TestCase):
                     expected = [KEYS[r][j]*a[j] % P for j in order]
                     self.assertEqual(values(ctx.round_constants[r], True), expected)
                 for mode, actual in (('full', ctx.mds_full), ('partial', ctx.mds_partial)):
+                    self.assertTrue(all(integer(x) < P for row in actual for x in row))
                     # The original mixing method also performs pi*M*pi^-1.
                     for j in range(3):
                         basis = [int(i == j) for i in range(3)]
@@ -196,6 +197,8 @@ class SDTests(unittest.TestCase):
         # Direct calls also accept noncanonical Montgomery representatives.
         cases = [[0, 0, 0], [R-1]*3, [P, 2*P, R-1]]
         cases += [[(R-1 if i == lane else 0) for i in range(3)] for lane in range(3)]
+        rng = random.Random(8173)
+        cases += [[rng.randrange(R) for _ in range(3)] for _ in range(100)]
         for _, _, ctx, basic in self.configs:
             for mode, name in ((15, 'full'), (1, 'partial')):
                 for case in cases:

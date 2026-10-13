@@ -55,7 +55,12 @@ S-box, and calls the full or partial mix layer.
 When `SD_SCALE=0`, `mix_layer_3_sd` applies the base matrix using only
 additions/subtractions; rotation selects fixed lane indices at compile time.
 Both round modes use this path. With scaling enabled, the function uses the
-precomputed full/partial matrices and the general matrix multiplication path.
+precomputed full/partial matrices and nine Montgomery multiplications. Matrix
+coefficients are canonical after initialization. Each input is normalized once;
+each completed row is reduced once, for six canonical reductions per mix.
+With both operands below p, each Montgomery product is below 2p, and a sum of
+three is below 6p < 2^256. This permits accumulating a row without intermediate
+canonical reductions. The input copy preserves in-place operation.
 
 ## Matrix transformations
 

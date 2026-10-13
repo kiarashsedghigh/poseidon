@@ -140,17 +140,24 @@ int mix_layer_3_sd(felt_t state[3], uint8_t round_mode, const poseidon3_ctx_sd *
 {
     if (round_mode != FULL_ROUND_SD && round_mode != PARTIAL_ROUND_SD) return -1;
 #if SD_SCALE
-    felt_t result[3] = {{0}}, product;
+    felt_t input[3], product;
     const felt_t (*matrix)[3] = round_mode == FULL_ROUND_SD
                                 ? ctx->mds_full : ctx->mds_partial;
+    /* Initialization guarantees matrix entries < p. Normalize each input
+     * once, keeping both multiplication operands canonical to avoid the
+     * field backend's near-2^256 overflow edge case. For x,y < p, REDC
+     * returns < p + p^2/2^256 < 2p. Three products sum to < 6p < 2^256,
+     * so only the completed row needs canonical reduction.
+     */
+    for (int j = 0; j < 3; j++) reduce_sd(input[j], state[j]);
     for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            multiply_sd(product, matrix[i][j], state[j]);
-            f251_add(result[i], result[i], product);
-            reduce_sd(result[i], result[i]);
+        f251_montgomery_mult(state[i], matrix[i][0], input[0]);
+        for (int j = 1; j < 3; j++) {
+            f251_montgomery_mult(product, matrix[i][j], input[j]);
+            f251_add(state[i], state[i], product);
         }
+        reduce_sd(state[i], state[i]);
     }
-    memcpy(state, result, sizeof(result));
 #else
     /* With unit scaling, both matrices are Pi*M*Pi^-1. Their rows are
      * sum+2*x0, sum-2*x1, sum-3*x2, at compile-time rotated positions.
