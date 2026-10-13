@@ -36,7 +36,7 @@ def main():
                         ['sources/posedion3_p5_sd.c', '-o', library])
                     run([sys.executable, 'tests/test_poseidon3_sd.py', library])
                     run([sys.executable, 'tests/test_poseidon3_pow5_standard.py', plain, library])
-    print('All 8 builds and 88 tests passed.')
+    print('All 8 builds and 96 tests passed.')
 
 
 if __name__ == '__main__':

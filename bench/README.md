@@ -37,9 +37,8 @@ defaults are in `sources/poseidon3_sd_config.h`.
 
 When scaling is disabled, the configured multipliers are ignored and effective
 multipliers are `(1,1,1)`. Input multiplication, constant scaling, and matrix
-scaling/inversion setup are compiled out. Mixing then uses additions/subtractions
-with compile-time rotated indices. With scaling enabled, general matrix
-multiplication remains. When rotation is disabled, indices use the identity
+scaling/inversion setup are compiled out. All configurations use the same
+general matrix loop as plain; initialization chooses the matrix entries. When rotation is disabled, indices use the identity
 order; there is no runtime rotation flag or conditional. Multiplier values remain configurable
 through `A0`, `A1`, `A2` when scaling is enabled.
 
@@ -58,8 +57,9 @@ done
 ```
 
 Each run reports the compiled options and compares its SD round loop against
-plain. Plain and unscaled SD use specialized add/subtract mixing. Scaled SD uses
-general matrix multiplication, so that timing difference includes its cost.
+plain. Both versions use identical general matrix loops: nine Montgomery
+multiplications, six additions, and six canonical reductions. The former
+optimized standard mix body is retained as a comment in the source.
 
 ## Build and run
 
@@ -96,7 +96,7 @@ The public permutation functions are unchanged.
 
 Only round constant addition, fifth-power S-boxes, and mixing are measured.
 Conversion to/from Montgomery form, SD input scaling and optional rotation,
-and SD matrix/constant precomputation are excluded. Both initial states are
+and both versions’ matrix/constant precomputation are excluded. Both initial states are
 prepared once before warmup. Each invocation resets from its prepared state
 before starting the timer, so outputs are not fed back into later invocations.
 Outputs stay in Montgomery form.

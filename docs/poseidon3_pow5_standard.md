@@ -9,7 +9,9 @@ with all three output elements. No domain tag is inserted or output selected.
 #include "poseidon3_p5_plain.h"
 
 felt_t state[3] = {{3,0,0,0}, {1,0,0,0}, {2,0,0,0}};
-permutation_3_pow5_standard(state);
+poseidon3_ctx_standard ctx;
+poseidon3_init_standard(&ctx);
+permutation_3_pow5_standard(state, &ctx);
 ```
 
 The call structure follows the original C implementation:
@@ -33,14 +35,23 @@ BLS12-381/Cauchy-matrix/55-partial-round parameters are not used.
 
 The public API contains only:
 
-- `permutation_3_pow5_standard(state)` — complete computation; ordinary input/output.
-- `round_3_pow5_standard(state, round_idx, round_mode)` — one round on a Montgomery
+- `poseidon3_init_standard(&ctx)` — prepare the fixed constants and matrices once.
+- `permutation_3_pow5_standard(state, &ctx)` — complete computation; ordinary input/output.
+- `round_3_pow5_standard(state, round_idx, round_mode, &ctx)` — one round on a Montgomery
   state, index 0..90, mode `FULL_ROUND_STANDARD` or `PARTIAL_ROUND_STANDARD`.
   Returns -1 for invalid arguments without mutation, otherwise 0.
-- `mix_layer_3_standard(state)` — base MDS on a Montgomery state.
+- `mix_layer_3_standard(state, round_mode, &ctx)` — base MDS on a Montgomery state;
+  invalid mode returns -1 without mutation.
 
-The matrix helper uses basic addition/subtraction to avoid the legacy assembly
-`f251_x_minus_c_times_y` zero-operand edge case. Original functions are unchanged.
+The standard and SD mix helpers now use identical general matrix loops, including
+when SD scaling is disabled. Each performs nine Montgomery multiplications,
+six additions and six canonical reductions. The original optimized standard
+addition/subtraction body is retained as a comment at the top of the function.
+The standard context holds equal full/partial base matrices; SD initialization
+applies its transformations. Both contexts are initialized outside benchmark
+timing. Round constant addition also uses the same normalization in both paths.
+Rebuild all callers: standard round/mix/permutation functions now take a context.
+The older cube-based functions remain unchanged.
 As with SD, fifth power is not invertible in this field; this is experimental.
 
 ## Run

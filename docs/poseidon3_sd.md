@@ -52,15 +52,13 @@ functions take Montgomery states. Round indices are 0..90; modes are
 mutation. The round adds transformed constants to every element, applies the
 S-box, and calls the full or partial mix layer.
 
-When `SD_SCALE=0`, `mix_layer_3_sd` applies the base matrix using only
-additions/subtractions; rotation selects fixed lane indices at compile time.
-Both round modes use this path. With scaling enabled, the function uses the
-precomputed full/partial matrices and nine Montgomery multiplications. Matrix
-coefficients are canonical after initialization. Each input is normalized once;
-each completed row is reduced once, for six canonical reductions per mix.
-With both operands below p, each Montgomery product is below 2p, and a sum of
-three is below 6p < 2^256. This permits accumulating a row without intermediate
-canonical reductions. The input copy preserves in-place operation.
+`mix_layer_3_sd` and the standard mix function use identical general matrix
+loops for every build configuration, including `SD_SCALE=0`. Only their
+initialized matrix entries differ. Each uses nine Montgomery multiplications,
+six additions and six canonical reductions. Each input is normalized once and
+each completed row is reduced once. With operands below p, each Montgomery
+product is below 2p and three products sum to less than 6p < 2^256. The input
+copy preserves in-place operation. Both contexts are read-only during rounds.
 
 ## Matrix transformations
 

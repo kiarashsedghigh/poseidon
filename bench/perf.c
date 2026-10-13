@@ -18,11 +18,11 @@ static double elapsed_ns(const struct timespec *start, const struct timespec *en
 }
 
 /* Benchmark-only helpers: state is already prepared in Montgomery form. */
-static void rounds_3_standard(felt_t state[3])
+static void rounds_3_standard(felt_t state[3], const poseidon3_ctx_standard *ctx)
 {
     for (int r = 0; r < POSEIDON3_ROUNDS_STANDARD; r++)
         round_3_pow5_standard(state, r,
-            r < 4 || r >= 87 ? FULL_ROUND_STANDARD : PARTIAL_ROUND_STANDARD);
+            r < 4 || r >= 87 ? FULL_ROUND_STANDARD : PARTIAL_ROUND_STANDARD, ctx);
 }
 
 static void rounds_3_sd(felt_t state[3], const poseidon3_ctx_sd *ctx)
@@ -35,13 +35,15 @@ static void rounds_3_sd(felt_t state[3], const poseidon3_ctx_sd *ctx)
 int main(void)
 {
     poseidon3_ctx_sd ctx;
+    poseidon3_ctx_standard plain_ctx;
     felt_t state[3], plain_input[3], sd_input[3], scaled[3];
     struct timespec start, end;
     double plain_ns = 0, sd_ns = 0;
     const uint64_t iterations = (uint64_t)ITER;
     const uint64_t warmup = (uint64_t)WARMUP;
 
-    // Precompute SD constants/matrices once, outside all measured intervals.
+    // Prepare both contexts outside all measured intervals.
+    poseidon3_init_standard(&plain_ctx);
     if (poseidon3_init_sd(&ctx, BENCH_MULTIPLIERS)) {
         fprintf(stderr, "SD multipliers must be nonzero modulo the field prime.\n");
         return 1;
@@ -66,7 +68,7 @@ int main(void)
 
     for (uint64_t i = 0; i < warmup; i++) {
         memcpy(state, plain_input, sizeof(state));
-        rounds_3_standard(state);
+        rounds_3_standard(state, &plain_ctx);
         result_sink += state[0][0] ^ state[1][0] ^ state[2][0];
         memcpy(state, sd_input, sizeof(state));
         rounds_3_sd(state, &ctx);
@@ -77,7 +79,7 @@ int main(void)
     for (uint64_t i = 0; i < iterations; i++) {
         memcpy(state, plain_input, sizeof(state));
         if (clock_gettime(CLOCK_MONOTONIC, &start)) goto clock_error;
-        rounds_3_standard(state);
+        rounds_3_standard(state, &plain_ctx);
         if (clock_gettime(CLOCK_MONOTONIC, &end)) goto clock_error;
         plain_ns += elapsed_ns(&start, &end);
         result_sink += state[0][0] ^ state[1][0] ^ state[2][0];
