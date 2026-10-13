@@ -42,17 +42,23 @@ with Make. Both benchmark implementations always use the same selected backend.
 
 ## What is measured
 
-`perf.c` calls each complete permutation `ITER` times and reports summed elapsed
-time in milliseconds, arithmetic mean in microseconds per permutation, and the
-SD/plain time ratio. It uses `clock_gettime(CLOCK_MONOTONIC)` wall-clock time
-around each call. Each invocation starts from the **same raw input**, so outputs
-are not fed back into later invocations.
+`perf.c` runs each 91-round loop `ITER` times and reports summed elapsed
+time in milliseconds, arithmetic mean in microseconds per 91-round block, and
+the SD/plain time ratio. Benchmark-only helpers `rounds_3_standard` and
+`rounds_3_sd` call the existing round functions with the same 4/83/4 schedule.
+The public permutation functions are unchanged.
 
-The measured calls include conversion to/from Montgomery form and all rounds.
-The SD call also includes its input scaling and optional rotation. One-time SD
-matrix/constant precomputation, warmup, input resets, output consumption, and
-printing are excluded. The timer boundaries have a small overhead and wall time
-can include scheduling delays; no overhead subtraction is applied.
+Only round constant addition, fifth-power S-boxes, and mixing are measured.
+Conversion to/from Montgomery form, SD input scaling and optional rotation,
+and SD matrix/constant precomputation are excluded. Both initial states are
+prepared once before warmup. Each invocation resets from its prepared state
+before starting the timer, so outputs are not fed back into later invocations.
+Outputs stay in Montgomery form.
+
+Timing uses `clock_gettime(CLOCK_MONOTONIC)` around each round-loop call.
+Warmup, input resets, output consumption, and printing are excluded. The timer
+boundaries have a small overhead and wall time can include scheduling delays;
+no overhead subtraction is applied.
 
 A volatile checksum consumes every output outside the timed intervals. Results
 are timing observations for the current compiler/backend and machine, not a

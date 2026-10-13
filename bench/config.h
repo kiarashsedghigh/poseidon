@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "f251.h"
 
-/* Measured permutation calls per version. Also overridable with -DITER=... . */
+/* Measured 91-round blocks per version. Also overridable with -DITER=... . */
 #ifndef ITER
 #define ITER 10000
 #endif
