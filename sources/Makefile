@@ -84,6 +84,24 @@ endif
 clean:
 	rm -f *.o *.so test test_asm test.exe test_asm.exe bin_test_adx*
 
+# Non-SD fifth-power baseline, built independently of the SD implementation.
+all: lib_pos_pow5_standard.so
+only_c: lib_pos_pow5_standard.so
+
+poseidon_pow5_standard.o: poseidon_pow5_standard.c poseidon_pow5_standard.h poseidon_rc.h f251.h
+
+lib_pos_pow5_standard.so: f251.o f251_int128.o poseidon_rc.o poseidon_pow5_standard.o
+	$(CC) $(CFLAGS) -shared -o $@ $^
+
+ifneq ($(PLATFORM_X86_64),)
+all: lib_pos_pow5_standard_asm.so
+poseidon_pow5_standard_asm.o: poseidon_pow5_standard.c poseidon_pow5_standard.h poseidon_rc.h f251.h
+	$(CC) $(CFLAGS) $(CFLAGS_ASM) -c -o $@ $<
+
+lib_pos_pow5_standard_asm.so: f251_c.o f251_asm.o poseidon_rc.o poseidon_pow5_standard_asm.o platform_utils.c
+	$(CC) $(CFLAGS) $(CFLAGS_ASM) -shared -o $@ $^
+endif
+
 # Separate SD libraries; original implementation and library APIs stay intact.
 all: lib_pos_sd.so
 only_c: lib_pos_sd.so
