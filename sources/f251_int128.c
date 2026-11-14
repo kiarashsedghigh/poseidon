@@ -12,12 +12,14 @@ typedef unsigned __int128 uint128_t;
 ///  Macros
 ////////////////////////////////////////////////////////////////////////////////
 
-#define CONST_P3     0x800000000000011ull   // p = p3 * 2^192 + 1  = [1, 0, 0, p3]
-#define CONST_16P3  0x8000000000000110ull   // 16p = [16, 0, 0, (16p)_3]
+#define CONST_P3     F251_MODULUS_HIGH   // p = p3 * 2^192 + 1  = [1, 0, 0, p3]
+#define CONST_16P3  (16ULL * F251_MODULUS_HIGH)   // 16p = [16, 0, 0, (16p)_3]
 
 ////////////////////////////////////////////////////////////////////////////////
 ///  Constant field elements
 ////////////////////////////////////////////////////////////////////////////////
+
+const felt_t F251_MODULUS = F251_MODULUS_INITIALIZER;
 
 // 2^256 in Montgomery form = (2^256)^2 mod p
 const felt_t CONST_MONT_2256 = {
@@ -553,6 +555,19 @@ void f251_montgomery_cube(felt_t z, const felt_t x)
 
     f251_montgomery_mult(x2,x,x);
     f251_montgomery_mult(z,x2,x);
+}
+
+// Montgomery fifth power: x^2, x^4, then x^5. Supports z == x.
+void f251_montgomery_pow5(felt_t z, const felt_t x)
+{
+    felt_t reduced_x, x2, x4;
+
+    // Normalize before squaring: multiplication has an overflow edge case
+    // when both operands are near 2^256. Reduction preserves Montgomery form.
+    f251_final_reduce(reduced_x, x);
+    f251_montgomery_mult(x2, reduced_x, reduced_x);
+    f251_montgomery_mult(x4, x2, x2);
+    f251_montgomery_mult(z, x4, reduced_x);
 }
 
 #endif // defined(__SIZEOF_INT128__) && !defined(ASSEMBLY) && !defined(ISO_C)

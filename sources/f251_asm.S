@@ -1,3 +1,4 @@
+#include "f251_params.h"
 // Sanity check for the platform
 #if defined(__x86_64__)
 
@@ -1034,7 +1035,7 @@ FUN(f251_montgomery_mult):
     // load x0 in rdx 
     movq (%rsi), %rdx
     // move p3 in r10
-    movabsq $0x800000000000011, %r10 
+    movabsq $F251_MODULUS_HIGH, %r10
 
     // save rdi (used in macros)
     pushq %rdi

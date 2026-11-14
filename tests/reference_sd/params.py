@@ -1,0 +1,9 @@
+SD_CONST = 1
+
+A0_CONST = 1
+A1_CONST = 1
+A2_CONST = 2
+
+
+PERMUTE = True
+# PERMUTE = True

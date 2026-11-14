@@ -1,0 +1,52 @@
+#ifndef POSEDION3_P5_SD_H
+#define POSEDION3_P5_SD_H
+
+#include "poseidon3_sd_config.h"
+#include "f251.h"
+
+#define POSEIDON3_ROUNDS_SD 91
+#define FULL_ROUND_SD 0xF
+#define PARTIAL_ROUND_SD 0x1
+
+/* Original C field, round constants, and MDS matrix. Initialize once and reuse.
+ * Treat initialized fields as read-only. Other field values use Montgomery form.
+ * Configuration is public; this API supplies no randomness.
+ */
+typedef struct {
+    /* Read-only copy of F251_MODULUS in ordinary form; not a field selector. */
+    felt_t modulus;
+    felt_t multipliers[3];
+    felt_t round_constants[POSEIDON3_ROUNDS_SD][3];
+    felt_t mds_full[3][3];
+    felt_t mds_partial[3][3];
+} poseidon3_ctx_sd;
+
+/* Inspect the options compiled into the linked SD implementation. */
+extern const int poseidon3_permute_sd;
+extern const int poseidon3_scale_sd;
+
+/* Uses Python's fifth power and first-element partial S-box, with C's field,
+ * constants, 4/83/4 round schedule and base MDS. Multipliers are ordinary
+ * integers; Python's example values are {{1,0,0,0},{1,0,0,0},{2,0,0,0}}.
+ * SD_PERMUTE=1 rotates [s0,s1,s2] to [s2,s0,s1].
+ * SD_SCALE=0 ignores multipliers (which may be NULL) and uses unit scaling.
+ * With scaling enabled, returns -1 for any multiplier zero modulo p,
+ * leaving ctx unchanged; otherwise returns 0 on success. ctx must be non-null;
+ * multipliers must be non-null when SD_SCALE=1. Original C constants are
+ * transformed according to the compiled options. x^5 is not invertible in this field;
+ * this is an experimental construction, not the original Poseidon permutation.
+ */
+int poseidon3_init_sd(poseidon3_ctx_sd *ctx, const felt_t multipliers[3]);
+/* Montgomery states. Return -1 for invalid mode/index, leaving state intact;
+ * 0 on success. round_idx is a round number 0..90, not a constant offset.
+ */
+int mix_layer_3_sd(felt_t state[3], uint8_t round_mode,
+                   const poseidon3_ctx_sd *ctx);
+int round_3_sd(felt_t state[3], int round_idx, uint8_t round_mode,
+               const poseidon3_ctx_sd *ctx);
+/* Ordinary input/output. Includes scaling/permutation and 4/83/4 rounds.
+ * Output remains scaled/permuted as in the uploaded Python.
+ */
+void permutation_3_sd(felt_t state[3], const poseidon3_ctx_sd *ctx);
+
+#endif
