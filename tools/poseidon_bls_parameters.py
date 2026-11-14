@@ -20,8 +20,9 @@ INSTANCES = {
 }
 
 
-def generate_constants(t, rf, rp):
-    state = [int(c) for c in (f'{1:02b}{1:04b}{255:012b}{t:012b}'
+def generate_constants(t, rf, rp, modulus=P):
+    n = modulus.bit_length()
+    state = [int(c) for c in (f'{1:02b}{1:04b}{n:012b}{t:012b}'
                               f'{rf:010b}{rp:010b}' + '1' * 30)]
 
     def advance():
@@ -36,12 +37,12 @@ def generate_constants(t, rf, rp):
     while len(result) < (rf + rp) * t:
         value = 0
         count = 0
-        while count < 255:
+        while count < n:
             select, bit = advance(), advance()
             if select:
                 value = (value << 1) | bit
                 count += 1
-        if value < P:
+        if value < modulus:
             result.append(value)
     return [result[i:i+t] for i in range(0, len(result), t)]
 

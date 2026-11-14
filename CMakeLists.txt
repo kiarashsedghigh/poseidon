@@ -44,3 +44,12 @@ foreach(target IN ITEMS poseidon3-sd perf)
     target_compile_definitions(${target} PRIVATE
         SD_PERMUTE=$<BOOL:${SD_PERMUTE}> SD_SCALE=$<BOOL:${SD_SCALE}>)
 endforeach()
+
+# General-width experimental profiles with the existing StarkWare field.
+add_executable(poseidon-profiles examples/poseidon_profiles.c sources/poseidon_profiles.c ${POSEIDON_FIELD_SOURCES})
+target_include_directories(poseidon-profiles PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/sources")
+target_compile_features(poseidon-profiles PRIVATE c_std_99)
+target_compile_definitions(poseidon-profiles PRIVATE SD_PERMUTE=$<BOOL:${SD_PERMUTE}> SD_SCALE=$<BOOL:${SD_SCALE}>)
+if(POSEIDON_ISO_C)
+    target_compile_definitions(poseidon-profiles PRIVATE ISO_C=1)
+endif()
