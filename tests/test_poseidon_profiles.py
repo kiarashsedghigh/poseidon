@@ -8,7 +8,7 @@ Matrix=S*10
 RC=S*128
 class Profile(c.Structure): _fields_=[('name',c.c_char_p),('t',c.c_int),('rf',c.c_int),('rp',c.c_int)]
 class Context(c.Structure): _fields_=[('t',c.c_int),('rf',c.c_int),('rp',c.c_int),('rc',RC),('full',Matrix),('partial',Matrix),('multipliers',S),('protected_version',c.c_int)]
-lib=c.CDLL(os.environ.get('POSEIDON_PROFILE_LIBRARY', '/tmp/poseidon_profiles.so')); lib.poseidon_profile_init.argtypes=[c.POINTER(Context),c.POINTER(Profile),c.c_int,c.POINTER(F)];lib.poseidon_profile_permute.argtypes=[c.POINTER(Context),c.POINTER(F)]
+lib=c.CDLL(os.environ.get('POSEIDON_PROFILE_LIBRARY', '/tmp/poseidon_profiles.so')); lib.poseidon_profile_init.argtypes=[c.POINTER(Context),c.POINTER(Profile),c.c_int,c.POINTER(F)];lib.poseidon_profile_permute.argtypes=[c.POINTER(Context),c.POINTER(F)]; lib.poseidon_profile_rounds.argtypes=[c.POINTER(Context),c.POINTER(F)]
 profiles=(Profile*7).in_dll(lib,'poseidon_profiles')
 def integer(a):return sum(int(a[i])<<(64*i) for i in range(4))
 def felt(x):return F(*[(x>>(64*i))&((1<<64)-1) for i in range(4)])
@@ -28,4 +28,9 @@ for profile in profiles:
   expected=([x[i]*a[i]%p for i in range(t)] if protected and scale else x[:])
   if protected and rotate: expected=expected[-1:]+expected[:-1]
   assert [integer(v) for v in state[:t]]==expected,(profile.name,protected)
+  prepared=[(i+1)*(a[i] if protected and scale else 1)*2**256%p for i in range(t)]
+  if protected and rotate: prepared=prepared[-1:]+prepared[:-1]
+  rounds=S(*[felt(v) for v in prepared]);lib.poseidon_profile_rounds(c.byref(ctx),rounds)
+  decoded=[integer(v)*pow(2**256,-1,p)%p for v in rounds[:t]]
+  assert decoded==expected,(profile.name,protected,'round loop')
  print(profile.name.decode(), 'passed')

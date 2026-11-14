@@ -18,6 +18,8 @@ typedef struct {
 } poseidon_profile_ctx;
 /* multipliers are ordinary values; protected_version selects the SD path. */
 int poseidon_profile_init(poseidon_profile_ctx *, const poseidon_profile *, int protected_version, const felt_t *multipliers);
+/* Execute all rounds on a prepared Montgomery state, without conversions. */
+void poseidon_profile_rounds(const poseidon_profile_ctx *, felt_t *state);
 /* Input/output are ordinary field values; protected output retains encoding. */
 void poseidon_profile_permute(const poseidon_profile_ctx *, felt_t *state);
 #endif

@@ -53,3 +53,11 @@ target_compile_definitions(poseidon-profiles PRIVATE SD_PERMUTE=$<BOOL:${SD_PERM
 if(POSEIDON_ISO_C)
     target_compile_definitions(poseidon-profiles PRIVATE ISO_C=1)
 endif()
+
+add_executable(profiles-perf bench/profiles_perf.c sources/poseidon_profiles.c ${POSEIDON_FIELD_SOURCES})
+target_include_directories(profiles-perf PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/sources")
+target_compile_features(profiles-perf PRIVATE c_std_99)
+target_compile_definitions(profiles-perf PRIVATE SD_PERMUTE=$<BOOL:${SD_PERMUTE}> SD_SCALE=$<BOOL:${SD_SCALE}>)
+if(POSEIDON_ISO_C)
+    target_compile_definitions(profiles-perf PRIVATE ISO_C=1)
+endif()

@@ -119,3 +119,35 @@ Validate every option combination on default and portable C backends with:
 ```sh
 python3 tests/test_poseidon3_build_options.py
 ```
+
+## General-width profiles
+
+Run the new profile benchmark for every configuration with both protections on:
+
+```sh
+./bench/run_profiles.sh all 10000 100
+```
+
+Or select one profile and set the number of measured and warmup iterations:
+
+```sh
+./bench/run_profiles.sh poseidon-128-t3 10000 100
+./bench/run_profiles.sh poseidon-256-t10 10000 100
+./bench/run_profiles.sh poseidon-x 10000 100
+```
+
+Names are listed in `../docs/poseidon_profiles.md`. With no arguments the script
+runs all profiles using `ITER` and `WARMUP` from `config.h`. The executable can
+also be run directly as `build/profiles-bench/profiles-perf [all|PROFILE
+[ITERATIONS [WARMUP]]]`. Override the compile-time protection options through
+`SD_PERMUTE=OFF` or `SD_SCALE=OFF` before the script, and choose another build
+directory with `POSEIDON_BUILD_DIR`.
+
+Each row compares plain and protected implementations using the same width,
+round schedule, initial values `[1,...,t]`, and arithmetic. Protected inputs use
+multipliers `[1,2,3,1,...]`. The timed intervals cover only the complete round
+loops; context setup, scaling, rotation, Montgomery conversions, input resets,
+warmup, and output consumption are excluded. Results are wall-clock averages;
+run with sufficient iterations and repeat measurements to assess noise. These
+profiles use the experimental StarkWare field construction described in the
+profile documentation. This benchmark is separate from the older `perf` target.

@@ -82,6 +82,12 @@ void poseidon_profile_permute(const poseidon_profile_ctx *c,felt_t *state){
         if(c->protected_version)j=(i+t-1)%t;
 #endif
         memcpy(state[i],scaled[j],sizeof(felt_t));}
+    poseidon_profile_rounds(c,state);
+    for(int i=0;i<t;i++)f251_from_montgomery(state[i],state[i]);
+}
+
+void poseidon_profile_rounds(const poseidon_profile_ctx *c,felt_t *state){
+    felt_t tmp[10]; int t=c->t;
     for(int r=0;r<c->rf+c->rp;r++){
         int full=r<c->rf/2||r>=c->rf/2+c->rp;
         for(int i=0;i<t;i++)add(state[i],state[i],c->rc[r][i]);
@@ -94,5 +100,4 @@ void poseidon_profile_permute(const poseidon_profile_ctx *c,felt_t *state){
         for(int i=0;i<t;i++){felt_t product;memset(tmp[i],0,sizeof(felt_t));for(int j=0;j<t;j++){mul(product,m[i][j],state[j]);add(tmp[i],tmp[i],product);}}
         memcpy(state,tmp,(size_t)t*sizeof(felt_t));
     }
-    for(int i=0;i<t;i++)f251_from_montgomery(state[i],state[i]);
 }
