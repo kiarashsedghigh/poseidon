@@ -145,9 +145,9 @@ directory with `POSEIDON_BUILD_DIR`.
 
 Each row compares plain and protected implementations using the same width,
 round schedule, initial values `[1,...,t]`, and arithmetic. Protected inputs use
-multipliers `[1,2,3,1,...]`. The timed intervals cover only the complete round
-loops; context setup, scaling, rotation, Montgomery conversions, input resets,
-warmup, and output consumption are excluded. Results are wall-clock averages;
+multipliers `[1,2,3,1,...]`. The plain timed interval covers the round loop. The protected interval includes
+input scaling and rotation followed by the round loop. Context setup, Montgomery
+conversions, input resets, warmup, and output consumption are excluded. Results are wall-clock averages;
 run with sufficient iterations and repeat measurements to assess noise. These
 profiles use the experimental StarkWare field construction described in the
 profile documentation. This benchmark is separate from the older `perf` target.
@@ -169,9 +169,9 @@ plain-then-SD measurement order, and output format, but runs the profile's
 and multipliers in `bench/config.h`; rebuild after editing. Use environment
 variables `SD_PERMUTE=OFF` or `SD_SCALE=OFF` to build with a feature disabled.
 
-The timer excludes input conversion, scaling and rotation, and initialization.
-Both paths use the same general-width round implementation with their own
-contexts; differences in timing do not directly measure the excluded operations.
+The timer excludes Montgomery conversion and initialization. The protected
+timing includes input scaling and rotation followed by the 41 rounds; the plain
+timing includes the 41 rounds. Both use the same general-width round code.
 
 To run the original width-3, 91-round `perf` benchmark with a matching build
 script, use `./bench/run_old_perf.sh`. Both dedicated scripts read iteration,
@@ -179,3 +179,21 @@ warmup, input, and multiplier settings from `bench/config.h` and support
 `SD_PERMUTE`, `SD_SCALE`, and `POSEIDON_BUILD_DIR` environment overrides. The
 original benchmark uses its original matrix and round constants; see above for
 the differences from the 41-round Poseidon-80 profile.
+
+Run all seven profile scripts, or any one script, with optional iteration and
+warmup counts (defaults are `ITER` and `WARMUP` in `config.h`):
+
+```sh
+./bench/all.sh 10000 100
+./bench/run_poseidon_80_t3.sh 10000 100
+./bench/run_poseidon_80_t5.sh 10000 100
+./bench/run_poseidon_128_t3.sh 10000 100
+./bench/run_poseidon_128_t5.sh 10000 100
+./bench/run_poseidon_256_t6.sh 10000 100
+./bench/run_poseidon_256_t10.sh 10000 100
+./bench/run_poseidon_x.sh 10000 100
+```
+
+These use the general profile benchmark input `[1,...,t]` and multipliers
+`[1,2,3,1,...]`; the earlier `run_80_t3.sh` uses `config.h` input/multipliers.
+The legacy `run_old_perf.sh` still measures rounds only.

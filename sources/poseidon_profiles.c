@@ -74,16 +74,31 @@ int poseidon_profile_init(poseidon_profile_ctx *c,const poseidon_profile *p,int 
     }
     memcpy(c,&tmp,sizeof(tmp));return 0;
 }
-void poseidon_profile_permute(const poseidon_profile_ctx *c,felt_t *state){
-    felt_t tmp[10],scaled[10];int t=c->t;
-    for(int i=0;i<t;i++){reduce(tmp[i],state[i]);f251_to_montgomery(tmp[i],tmp[i]);mul(scaled[i],tmp[i],c->multipliers[i]);}
-    for(int i=0;i<t;i++){int j=i;
-#if SD_PERMUTE
-        if(c->protected_version)j=(i+t-1)%t;
+void poseidon_profile_encode(const poseidon_profile_ctx *c, felt_t *state)
+{
+#if SD_SCALE
+    for (int i = 0; i < c->t; i++) mul(state[i], state[i], c->multipliers[i]);
 #endif
-        memcpy(state[i],scaled[j],sizeof(felt_t));}
-    poseidon_profile_rounds(c,state);
-    for(int i=0;i<t;i++)f251_from_montgomery(state[i],state[i]);
+#if SD_PERMUTE
+    felt_t last;
+    memcpy(last, state[c->t - 1], sizeof(felt_t));
+    for (int i = c->t - 1; i > 0; i--) memcpy(state[i], state[i-1], sizeof(felt_t));
+    memcpy(state[0], last, sizeof(felt_t));
+#endif
+#if !SD_SCALE && !SD_PERMUTE
+    (void)c; (void)state;
+#endif
+}
+
+void poseidon_profile_permute(const poseidon_profile_ctx *c, felt_t *state)
+{
+    for (int i = 0; i < c->t; i++) {
+        reduce(state[i], state[i]);
+        f251_to_montgomery(state[i], state[i]);
+    }
+    if (c->protected_version) poseidon_profile_encode(c, state);
+    poseidon_profile_rounds(c, state);
+    for (int i = 0; i < c->t; i++) f251_from_montgomery(state[i], state[i]);
 }
 
 void poseidon_profile_rounds(const poseidon_profile_ctx *c, felt_t *state)

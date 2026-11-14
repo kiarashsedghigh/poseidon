@@ -24,27 +24,16 @@ int main(void)
         fprintf(stderr, "Profile initialization failed; multipliers must be nonzero modulo p.\n");
         return 1;
     }
-    felt_t plain_input[3], scaled[3], sd_input[3], state[3];
-    for (int i = 0; i < 3; i++) {
+    felt_t plain_input[3], state[3];
+    for (int i = 0; i < 3; i++)
         f251_to_montgomery(plain_input[i], BENCH_INPUT[i]);
-#if SD_SCALE
-        f251_montgomery_mult(scaled[i], plain_input[i], sd.multipliers[i]);
-#else
-        memcpy(scaled[i], plain_input[i], sizeof(felt_t));
-#endif
-    }
-#if SD_PERMUTE
-    const int order[3] = {2, 0, 1};
-#else
-    const int order[3] = {0, 1, 2};
-#endif
-    for (int i = 0; i < 3; i++) memcpy(sd_input[i], scaled[order[i]], sizeof(felt_t));
     const uint64_t iterations = ITER, warmup = WARMUP;
     for (uint64_t i = 0; i < warmup; i++) {
         memcpy(state, plain_input, sizeof(state));
         poseidon_profile_rounds(&plain, state);
         result_sink += state[0][0] ^ state[1][0] ^ state[2][0];
-        memcpy(state, sd_input, sizeof(state));
+        memcpy(state, plain_input, sizeof(state));
+        poseidon_profile_encode(&sd, state);
         poseidon_profile_rounds(&sd, state);
         result_sink += state[0][0] ^ state[1][0] ^ state[2][0];
     }
@@ -59,13 +48,15 @@ int main(void)
         result_sink += state[0][0] ^ state[1][0] ^ state[2][0];
     }
     for (uint64_t i = 0; i < iterations; i++) {
-        memcpy(state, sd_input, sizeof(state));
+        memcpy(state, plain_input, sizeof(state));
         if (clock_gettime(CLOCK_MONOTONIC, &start)) goto clock_error;
+        poseidon_profile_encode(&sd, state);
         poseidon_profile_rounds(&sd, state);
         if (clock_gettime(CLOCK_MONOTONIC, &end)) goto clock_error;
         sd_ns += elapsed_ns(&start, &end);
         result_sink += state[0][0] ^ state[1][0] ^ state[2][0];
     }
+    printf("Timing: plain rounds; SD input scaling/rotation + rounds.\n");
     printf("Profile: %s, t=%d, full=%d, partial=%d\n",profile->name,profile->t,profile->rf,profile->rp);
     printf("Iterations per version: %" PRIu64 " (warmup: %" PRIu64 ")\n",iterations,warmup);
     printf("Compiled SD options: rotation=%d, scaling=%d\n",SD_PERMUTE,SD_SCALE);
@@ -82,7 +73,7 @@ int main(void)
         putchar('\n');
     }
     printf("Plain: total %.3f ms, average %.3f us/41-round block\n",plain_ns/1e6,plain_ns/iterations/1e3);
-    printf("SD:    total %.3f ms, average %.3f us/41-round block\n",sd_ns/1e6,sd_ns/iterations/1e3);
+    printf("SD:    total %.3f ms, average %.3f us/encoding + 41 rounds\n",sd_ns/1e6,sd_ns/iterations/1e3);
     if (plain_ns > 0) {
         printf("SD/plain time ratio: %.3fx\n",sd_ns/plain_ns);
         printf("Overhead: %+.2f%%\n",100*(sd_ns/plain_ns-1));
