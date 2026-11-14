@@ -86,18 +86,35 @@ void poseidon_profile_permute(const poseidon_profile_ctx *c,felt_t *state){
     for(int i=0;i<t;i++)f251_from_montgomery(state[i],state[i]);
 }
 
-void poseidon_profile_rounds(const poseidon_profile_ctx *c,felt_t *state){
-    felt_t tmp[10]; int t=c->t;
-    for(int r=0;r<c->rf+c->rp;r++){
-        int full=r<c->rf/2||r>=c->rf/2+c->rp;
-        for(int i=0;i<t;i++)add(state[i],state[i],c->rc[r][i]);
-        for(int i=0;i<t;i++){int active=0;
+void poseidon_profile_rounds(const poseidon_profile_ctx *c, felt_t *state)
+{
+    felt_t input[POSEIDON_MAX_WIDTH], product;
+    int t = c->t;
+    int active = 0;
 #if SD_PERMUTE
-            if(c->protected_version)active=1%t;
+    if (c->protected_version) active = 1 % t;
 #endif
-            if(full||i==active)f251_montgomery_pow5(state[i],state[i]);}
-        const felt_t (*m)[10]=full?c->full:c->partial;
-        for(int i=0;i<t;i++){felt_t product;memset(tmp[i],0,sizeof(felt_t));for(int j=0;j<t;j++){mul(product,m[i][j],state[j]);add(tmp[i],tmp[i],product);}}
-        memcpy(state,tmp,(size_t)t*sizeof(felt_t));
+    for (int r = 0; r < c->rf + c->rp; r++) {
+        int full = r < c->rf / 2 || r >= c->rf / 2 + c->rp;
+        for (int i = 0; i < t; i++) add(state[i], state[i], c->rc[r][i]);
+        if (full) {
+            for (int i = 0; i < t; i++) f251_montgomery_pow5(state[i], state[i]);
+        } else {
+            f251_montgomery_pow5(state[active], state[active]);
+        }
+        const felt_t (*m)[POSEIDON_MAX_WIDTH] = full ? c->full : c->partial;
+        /* As in the earlier width-3 implementation, coefficients are canonical.
+         * Normalize each input once. Each product is < 2p, so up to ten
+         * products sum to < 20p < 2^256 and one row reduction suffices.
+         */
+        for (int j = 0; j < t; j++) reduce(input[j], state[j]);
+        for (int i = 0; i < t; i++) {
+            f251_montgomery_mult(state[i], m[i][0], input[0]);
+            for (int j = 1; j < t; j++) {
+                f251_montgomery_mult(product, m[i][j], input[j]);
+                f251_add(state[i], state[i], product);
+            }
+            reduce(state[i], state[i]);
+        }
     }
 }

@@ -151,3 +151,11 @@ warmup, and output consumption are excluded. Results are wall-clock averages;
 run with sufficient iterations and repeat measurements to assess noise. These
 profiles use the experimental StarkWare field construction described in the
 profile documentation. This benchmark is separate from the older `perf` target.
+
+The profile round loop uses the earlier width-3 benchmark's mixing approach:
+inputs are normalized once, products are accumulated row by row, and each row
+is reduced once. The profile and earlier width-3 benchmark still use different
+base matrices, round constants, and round counts. Plain and protected profile
+runs use the same code and schedule; precomputed matrix/constant values and the
+active partial S-box position can differ. Small timing differences can reflect
+noise, scheduling, or measurement order; repeat runs before interpreting them.
