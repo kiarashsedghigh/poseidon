@@ -61,3 +61,11 @@ target_compile_definitions(profiles-perf PRIVATE SD_PERMUTE=$<BOOL:${SD_PERMUTE}
 if(POSEIDON_ISO_C)
     target_compile_definitions(profiles-perf PRIVATE ISO_C=1)
 endif()
+
+add_executable(perf-80-t3 bench/perf_80_t3.c sources/poseidon_profiles.c ${POSEIDON_FIELD_SOURCES})
+target_include_directories(perf-80-t3 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/sources")
+target_compile_features(perf-80-t3 PRIVATE c_std_99)
+target_compile_definitions(perf-80-t3 PRIVATE SD_PERMUTE=$<BOOL:${SD_PERMUTE}> SD_SCALE=$<BOOL:${SD_SCALE}>)
+if(POSEIDON_ISO_C)
+    target_compile_definitions(perf-80-t3 PRIVATE ISO_C=1)
+endif()

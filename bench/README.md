@@ -159,3 +159,16 @@ base matrices, round constants, and round counts. Plain and protected profile
 runs use the same code and schedule; precomputed matrix/constant values and the
 active partial S-box position can differ. Small timing differences can reflect
 noise, scheduling, or measurement order; repeat runs before interpreting them.
+
+## Dedicated Poseidon-80, width 3 benchmark
+
+Run `./bench/run_80_t3.sh` to build and measure only `poseidon-80-t3`. It uses
+the old `perf` benchmark's input `[3,1,2]`, multipliers `(1,1,2)`, warmup,
+plain-then-SD measurement order, and output format, but runs the profile's
+41 rounds and generated Cauchy matrix/constants. Set `ITER`, `WARMUP`, inputs,
+and multipliers in `bench/config.h`; rebuild after editing. Use environment
+variables `SD_PERMUTE=OFF` or `SD_SCALE=OFF` to build with a feature disabled.
+
+The timer excludes input conversion, scaling and rotation, and initialization.
+Both paths use the same general-width round implementation with their own
+contexts; differences in timing do not directly measure the excluded operations.
