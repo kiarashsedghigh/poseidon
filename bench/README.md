@@ -172,3 +172,10 @@ variables `SD_PERMUTE=OFF` or `SD_SCALE=OFF` to build with a feature disabled.
 The timer excludes input conversion, scaling and rotation, and initialization.
 Both paths use the same general-width round implementation with their own
 contexts; differences in timing do not directly measure the excluded operations.
+
+To run the original width-3, 91-round `perf` benchmark with a matching build
+script, use `./bench/run_old_perf.sh`. Both dedicated scripts read iteration,
+warmup, input, and multiplier settings from `bench/config.h` and support
+`SD_PERMUTE`, `SD_SCALE`, and `POSEIDON_BUILD_DIR` environment overrides. The
+original benchmark uses its original matrix and round constants; see above for
+the differences from the 41-round Poseidon-80 profile.
